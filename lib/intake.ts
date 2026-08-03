@@ -27,6 +27,12 @@ export interface IntakeSessionBundle {
   generatedAt: string;
 }
 
+export interface VerifiedReturn {
+  valid: boolean;
+  code: string;
+  extractedBytes?: Uint8Array;
+}
+
 const ALLOWED_EXTENSIONS = ["txt", "md", "json"] as const;
 type AllowedExtension = (typeof ALLOWED_EXTENSIONS)[number];
 
@@ -63,6 +69,19 @@ function utf8ByteLength(str: string): number {
   return new TextEncoder().encode(str).length;
 }
 
+/**
+ * Decode bytes as UTF-8 with fatal mode. Returns null if the bytes are not
+ * valid UTF-8 — the caller must reject malformed bytes before presenting
+ * them as a faithful immutable text source.
+ */
+export function decodeFatalUtf8(bytes: Uint8Array): string | null {
+  try {
+    return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  } catch {
+    return null;
+  }
+}
+
 export async function createIngestedArtifact(
   bytes: Uint8Array,
   metadata: Pick<ArtifactRef, "mediaType" | "originalName">,
@@ -75,19 +94,36 @@ export async function createIngestedArtifact(
   };
 }
 
+/**
+ * Create a TextSpanSelector from explicit UTF-16 character offsets within the
+ * source text. The caller MUST derive these offsets from the actual DOM Range
+ * location, not from String.indexOf — indexOf resolves the wrong occurrence
+ * when identical text appears more than once.
+ */
 export async function createIntakeSelector(
   artifact: ArtifactRef,
   sourceText: string,
-  selectedText: string,
+  characterStart: number,
+  characterEnd: number,
 ): Promise<TextSpanSelector> {
-  const characterStart = sourceText.indexOf(selectedText);
-  if (characterStart < 0) {
-    throw new Error("Selected text is not present in the admitted source.");
+  if (
+    !Number.isInteger(characterStart) ||
+    !Number.isInteger(characterEnd) ||
+    characterStart < 0 ||
+    characterEnd <= characterStart ||
+    characterEnd > sourceText.length
+  ) {
+    throw new Error(
+      `Invalid character bounds: [${characterStart}, ${characterEnd}) within source of length ${sourceText.length}.`,
+    );
   }
 
-  const characterEnd = characterStart + selectedText.length;
-  const prefix = sourceText.slice(0, characterStart);
   const selected = sourceText.slice(characterStart, characterEnd);
+  if (selected.length === 0) {
+    throw new Error("Character bounds produce an empty selection.");
+  }
+
+  const prefix = sourceText.slice(0, characterStart);
   const suffix = sourceText.slice(characterEnd);
   const byteStart = utf8ByteLength(prefix);
   const byteEnd = byteStart + utf8ByteLength(selected);
@@ -130,6 +166,23 @@ export async function verifyIntakeSelector(
   }
 
   return { valid: true, code: "verified", extractedBytes };
+}
+
+/**
+ * Verify a selector against the artifact bytes and return the extracted bytes
+ * only if verification passes. Unlike returnToBytes (which is a raw slice),
+ * this function performs full verification (artifact identity, bounds, and
+ * selected-text hash) before returning content.
+ */
+export async function verifiedReturn(
+  artifactBytes: Uint8Array,
+  selector: TextSpanSelector,
+): Promise<VerifiedReturn> {
+  const result = await verifyIntakeSelector(artifactBytes, selector);
+  if (result.valid && result.extractedBytes) {
+    return { valid: true, code: "verified", extractedBytes: result.extractedBytes };
+  }
+  return { valid: false, code: result.code };
 }
 
 export function returnToBytes(
