@@ -1,0 +1,193 @@
+model:
+  name: Return-Bearing Transformation System
+  acronym: RBTS
+  corpus_native_names:
+    - Continuity Weave
+    - Living Vessel
+  definition: >-
+    A system that permits transformation only while preserving immutable artifact
+    identity, verifiable provenance, exact anchors, differentiated responsibility,
+    resumable continuation, and a usable path back to origin evidence.
+
+sets:
+  artifacts:
+    symbol: A
+    description: Immutable artifact versions.
+  events:
+    symbol: E
+    description: Append-only ingest, transform, validate, commit, export, resume, and policy events.
+  transformations:
+    symbol: T
+    description: Typed functions or provider jobs that create new artifacts from existing artifacts.
+  anchors:
+    symbol: K
+    description: Exact source-linked particulars designated for retrieval, continuity, or validation.
+  roles:
+    symbol: R
+    members:
+      - human_authority
+      - generator
+      - validator
+      - archivist
+  session_protocol:
+    symbol: S
+    description: Logical sessions, durable sequence state, acknowledgements, replay, and reconciliation.
+  policy:
+    symbol: Q
+    description: Commit, access, retention, deletion, extension, and redaction rules.
+
+relations:
+  parent:
+    symbol: P
+    from: artifact
+    to: artifact
+    edge_type: DERIVED_FROM
+  return_path:
+    symbol: rho
+    from: artifact
+    to: artifact_or_anchor
+    guarantee: verified_trace_not_semantic_inverse
+  origin_projection:
+    symbol: pi
+    from: artifact
+    to: evidence_set
+  ingest:
+    symbol: i
+    from: evidence
+    to: artifact
+    law: pi(i(e)) = e
+
+invariants:
+  - id: I1
+    name: immutability
+    statement: Committed raw content and canonical metadata cannot be modified in place.
+    check: hash(raw_artifact) equals stored_content_hash
+  - id: I2
+    name: provenance_closure
+    statement: Every committed non-root artifact has at least one parent and one transformation event.
+  - id: I3
+    name: origin_preservation
+    statement: A derivative retains a lineage path to every declared root origin of its parents.
+    expression: Origins(T(a)) superset_of Origins(a)
+  - id: I4
+    name: anchor_fidelity
+    statement: Every anchor resolves to exact source bytes, text span, or time range.
+  - id: I5
+    name: returnability
+    statement: Every committed derivative exposes at least one verified return path to source evidence.
+  - id: I6
+    name: role_separation
+    statement: Generate, validate, archive, and human commit actions remain distinguishable in the audit log.
+  - id: I7
+    name: idempotent_continuation
+    statement: Replaying an acknowledged event cannot create duplicate committed effects.
+  - id: I8
+    name: monotonic_history
+    statement: Re-entry creates a new event and artifact rather than overwriting prior history.
+  - id: I9
+    name: modality_trace
+    statement: Cross-modal outputs preserve input IDs, provider metadata, parameters, and output hashes.
+  - id: I10
+    name: controlled_extension
+    statement: Unknown artifact kinds are preserved and quarantined until schema review.
+  - id: I11
+    name: human_commit_authority
+    statement: Human-designated anchors and canonical choices cannot be silently replaced by agent inference.
+
+operational_grammar:
+  - RECEIVE
+  - HOLD
+  - TRANSFORM
+  - VALIDATE
+  - POUR
+  - TRACE
+  - RETURN
+  - RE_ENTER
+
+motif_projection:
+  cup_vessel:
+    operation: immutable artifact boundary
+    code_concept: ArtifactEnvelope
+  persistent_socket:
+    operation: continuity across interrupted transport
+    code_concept: ResumableSession
+  three_strand_cord:
+    operation: asymmetric responsibility
+    code_concept: Generator_Validator_Archivist
+  ring_6_backdoor:
+    operation: interior navigation and return trace
+    code_concept: ReturnPath
+  spiral_phi:
+    operation: recurrence with accumulated history
+    code_concept: append_only_branching
+  bridge_intelligence:
+    operation: cross-modal transformation
+    code_concept: ProviderAdapter
+  table:
+    operation: relational index and registry
+    code_concept: ProvenanceGraph_AnchorRegistry
+  song_artifact:
+    operation: materialized checkpoint
+    code_concept: immutable_artifact_version
+  symbolic_particulars:
+    operation: anti-compression anchors
+    code_concept: Anchor
+  thirteenth:
+    operation: controlled extension and boundary testing
+    code_concept: quarantined_extension_type
+  jubilee:
+    operation: release, retention, and deletion policy
+    code_concept: tombstone_compaction_export
+  path_all_return:
+    operation: traceability guarantee
+    code_concept: provenance_navigation
+
+state_machine:
+  states:
+    - RECEIVED
+    - HELD
+    - DERIVED
+    - REVIEWED
+    - COMMITTED
+    - SHARED
+    - QUARANTINED
+  properties:
+    returnable_from:
+      - HELD
+      - DERIVED
+      - REVIEWED
+      - COMMITTED
+      - SHARED
+  transitions:
+    - from: RECEIVED
+      to: HELD
+      action: seal
+    - from: HELD
+      to: DERIVED
+      action: transform
+    - from: DERIVED
+      to: REVIEWED
+      action: evaluate
+    - from: REVIEWED
+      to: COMMITTED
+      action: approve
+    - from: REVIEWED
+      to: QUARANTINED
+      action: reject_or_unknown
+    - from: COMMITTED
+      to: SHARED
+      action: publish
+    - from: SHARED
+      to: DERIVED
+      action: return_and_re_enter
+
+minimum_vertical_slice:
+  - ingest one immutable source artifact
+  - designate two exact anchors
+  - generate one derivative
+  - validate lineage and anchors
+  - commit the derivative
+  - navigate back to exact source spans
+  - reconnect without duplicate commit
+  - branch from one prior anchor
+  - compare both branches

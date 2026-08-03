@@ -1,0 +1,240 @@
+{
+  "schemaVersion": "1.0.0",
+  "id": "capsule_9df9f446-c882-4670-992b-0998d47b96cb",
+  "title": "The floor knows — example capsule",
+  "createdAt": "2026-08-03T01:32:29.309Z",
+  "updatedAt": "2026-08-03T01:32:29.309Z",
+  "sourceArtifactId": "source_622aafbf-72ef-40fd-ad4c-9ade72de1084",
+  "artifacts": [
+    {
+      "id": "source_622aafbf-72ef-40fd-ad4c-9ade72de1084",
+      "kind": "source",
+      "title": "Transit fragment",
+      "contentType": "text/plain",
+      "content": "I knew the door by heart\nBefore I knew my name\nTable set in the dusk\nJar sealed, holding flame\n\nBlue in the hallway\nRoses in the stone\n\nCome through here\nIt holds, it holds\nCome through here\nThe floor knows\n022100\nUnderfoot, I go",
+      "byteLength": 229,
+      "sha256": "486bc5d301e1689ef1f55a0a1b9db4210c49cc6823545e86ec2c66b802da8a00",
+      "createdAt": "2026-08-03T01:32:29.312Z",
+      "immutable": true,
+      "metadata": {
+        "committedBy": "Human authority"
+      }
+    },
+    {
+      "id": "derivative_b822cff6-7632-49d8-bea0-290748701c48",
+      "kind": "derivative",
+      "title": "The route becomes operational",
+      "contentType": "text/plain",
+      "content": "The house is not a diagram but a route. Blue remains in the hallway and roses remain set into stone. The invitation is operational: “Come through here.” The floor remembers the traveler, and 022100 becomes a coordinate underfoot rather than a symbol overhead.",
+      "byteLength": 263,
+      "sha256": "44d1bab0f361b0c99a1958d01724341e4b37163feea80c9efd2de8702cde52c4",
+      "createdAt": "2026-08-03T01:32:29.313Z",
+      "immutable": true,
+      "metadata": {
+        "status": "accepted"
+      }
+    }
+  ],
+  "anchors": [
+    {
+      "id": "anchor_874bb5f7-1bc6-477b-a787-8238dc671021",
+      "sourceArtifactId": "source_622aafbf-72ef-40fd-ad4c-9ade72de1084",
+      "start": 96,
+      "end": 115,
+      "exactText": "Blue in the hallway",
+      "label": "blue hallway",
+      "category": "physical_detail",
+      "significance": "Preserves the embodied color-location pairing.",
+      "createdAt": "2026-08-03T01:32:29.313Z"
+    },
+    {
+      "id": "anchor_66c041bd-6098-4137-a86a-280cf1e32567",
+      "sourceArtifactId": "source_622aafbf-72ef-40fd-ad4c-9ade72de1084",
+      "start": 116,
+      "end": 134,
+      "exactText": "Roses in the stone",
+      "label": "roses in stone",
+      "category": "physical_detail",
+      "significance": "Preserves growth embedded in a durable structure.",
+      "createdAt": "2026-08-03T01:32:29.313Z"
+    },
+    {
+      "id": "anchor_9f8f66cb-6cbc-4e61-bcb7-b7770566f73b",
+      "sourceArtifactId": "source_622aafbf-72ef-40fd-ad4c-9ade72de1084",
+      "start": 136,
+      "end": 153,
+      "exactText": "Come through here",
+      "label": "invitation to enter",
+      "category": "exact_phrase",
+      "significance": "The work is navigable rather than merely observable.",
+      "createdAt": "2026-08-03T01:32:29.313Z"
+    },
+    {
+      "id": "anchor_66176f22-86a2-43d9-b5d2-a58aa32834f9",
+      "sourceArtifactId": "source_622aafbf-72ef-40fd-ad4c-9ade72de1084",
+      "start": 191,
+      "end": 206,
+      "exactText": "The floor knows",
+      "label": "floor as witness",
+      "category": "unresolved_tension",
+      "significance": "The architecture retains evidence of passage.",
+      "createdAt": "2026-08-03T01:32:29.313Z"
+    },
+    {
+      "id": "anchor_5a8b1343-3c6d-4eb9-aca1-7c3ab3a35378",
+      "sourceArtifactId": "source_622aafbf-72ef-40fd-ad4c-9ade72de1084",
+      "start": 207,
+      "end": 213,
+      "exactText": "022100",
+      "label": "origin coordinate",
+      "category": "time_or_place",
+      "significance": "A stable return coordinate.",
+      "createdAt": "2026-08-03T01:32:29.313Z"
+    }
+  ],
+  "transformations": [
+    {
+      "id": "transform_1cb2e4e1-b86b-4474-9c26-71d4118eea49",
+      "inputArtifactIds": [
+        "source_622aafbf-72ef-40fd-ad4c-9ade72de1084"
+      ],
+      "outputArtifactId": "derivative_b822cff6-7632-49d8-bea0-290748701c48",
+      "anchorIds": [
+        "anchor_874bb5f7-1bc6-477b-a787-8238dc671021",
+        "anchor_66c041bd-6098-4137-a86a-280cf1e32567",
+        "anchor_9f8f66cb-6cbc-4e61-bcb7-b7770566f73b",
+        "anchor_66176f22-86a2-43d9-b5d2-a58aa32834f9",
+        "anchor_5a8b1343-3c6d-4eb9-aca1-7c3ab3a35378"
+      ],
+      "actor": {
+        "role": "generator",
+        "name": "Human / model collaboration"
+      },
+      "method": "architectural interpretation",
+      "parameters": {
+        "declaredPurpose": "Translate poetic particulars into operational architecture without severing origin."
+      },
+      "createdAt": "2026-08-03T01:32:29.313Z"
+    }
+  ],
+  "validations": [
+    {
+      "id": "validation_230803cd-f922-4911-b187-b5d887db04d8",
+      "artifactId": "derivative_b822cff6-7632-49d8-bea0-290748701c48",
+      "validator": {
+        "role": "validator",
+        "name": "Independent human validator"
+      },
+      "decision": "accepted",
+      "items": [
+        {
+          "anchorId": "anchor_874bb5f7-1bc6-477b-a787-8238dc671021",
+          "status": "unresolved",
+          "evidence": "Blue remains in the hallway and roses remain set into stone.",
+          "notes": "A possible relation exists, but human judgment is required.",
+          "machineSuggestion": {
+            "suggestedStatus": "unresolved",
+            "confidence": 0.364,
+            "evidence": "Blue remains in the hallway and roses remain set into stone.",
+            "rationale": "A possible relation exists, but human judgment is required."
+          }
+        },
+        {
+          "anchorId": "anchor_66c041bd-6098-4137-a86a-280cf1e32567",
+          "status": "unresolved",
+          "evidence": "Blue remains in the hallway and roses remain set into stone.",
+          "notes": "A possible relation exists, but human judgment is required.",
+          "machineSuggestion": {
+            "suggestedStatus": "unresolved",
+            "confidence": 0.364,
+            "evidence": "Blue remains in the hallway and roses remain set into stone.",
+            "rationale": "A possible relation exists, but human judgment is required."
+          }
+        },
+        {
+          "anchorId": "anchor_9f8f66cb-6cbc-4e61-bcb7-b7770566f73b",
+          "status": "preserved_exact",
+          "evidence": "into stone. The invitation is operational: “Come through here.” The floor remembers the traveler, and 0221",
+          "notes": "The exact normalized source span appears in the derivative.",
+          "machineSuggestion": {
+            "suggestedStatus": "preserved_exact",
+            "confidence": 1,
+            "evidence": "into stone. The invitation is operational: “Come through here.” The floor remembers the traveler, and 0221",
+            "rationale": "The exact normalized source span appears in the derivative."
+          }
+        },
+        {
+          "anchorId": "anchor_66176f22-86a2-43d9-b5d2-a58aa32834f9",
+          "status": "omitted_intentionally",
+          "evidence": "The house is not a diagram but a route.",
+          "notes": "No sufficiently similar derivative passage was found. Confirm whether omission was intentional.",
+          "machineSuggestion": {
+            "suggestedStatus": "omitted_intentionally",
+            "confidence": 0.889,
+            "evidence": "The house is not a diagram but a route.",
+            "rationale": "No sufficiently similar derivative passage was found. Confirm whether omission was intentional."
+          }
+        },
+        {
+          "anchorId": "anchor_5a8b1343-3c6d-4eb9-aca1-7c3ab3a35378",
+          "status": "preserved_exact",
+          "evidence": "here.” The floor remembers the traveler, and 022100 becomes a coordinate underfoot rather than a",
+          "notes": "The exact normalized source span appears in the derivative.",
+          "machineSuggestion": {
+            "suggestedStatus": "preserved_exact",
+            "confidence": 1,
+            "evidence": "here.” The floor remembers the traveler, and 022100 becomes a coordinate underfoot rather than a",
+            "rationale": "The exact normalized source span appears in the derivative."
+          }
+        }
+      ],
+      "unanchoredClaims": "“route” and “coordinate” are interpretive additions and remain explicitly labeled as such.",
+      "notes": "Accepted as an architectural interpretation, not as a literal restatement.",
+      "createdAt": "2026-08-03T01:32:29.314Z"
+    }
+  ],
+  "events": [
+    {
+      "id": "event_example_source",
+      "type": "SOURCE_COMMITTED",
+      "payload": {
+        "artifactId": "source_622aafbf-72ef-40fd-ad4c-9ade72de1084"
+      },
+      "at": "2026-08-03T01:32:29.312Z"
+    },
+    {
+      "id": "event_example_derivative",
+      "type": "DERIVATIVE_COMMITTED",
+      "payload": {
+        "artifactId": "derivative_b822cff6-7632-49d8-bea0-290748701c48"
+      },
+      "at": "2026-08-03T01:32:29.313Z"
+    },
+    {
+      "id": "event_example_validation",
+      "type": "VALIDATION_COMMITTED",
+      "payload": {
+        "artifactId": "derivative_b822cff6-7632-49d8-bea0-290748701c48"
+      },
+      "at": "2026-08-03T01:32:29.314Z"
+    }
+  ],
+  "activeDerivativeId": "derivative_b822cff6-7632-49d8-bea0-290748701c48",
+  "seal": {
+    "algorithm": "ECDSA-P256-SHA256",
+    "manifestHash": "98325e0a97f12b29a6ac8c3e434214a719ff65aadc1b41335a54c7c1acf0ed56",
+    "signature": "++SaUvWFdGB7OkTlyFwaX5e3uw9Ilmwt8nE96h91mF06+KNI2HUWRoj/Ly+zz7aTuYRirDT4OBDQBjENkLWdSQ==",
+    "publicKeyJwk": {
+      "key_ops": [
+        "verify"
+      ],
+      "ext": true,
+      "kty": "EC",
+      "x": "5UWPOo5zqt12zOmyZD8hyusvXoj-leF_obbwbEPGz4k",
+      "y": "TfTEXDxgSU3sBmfAyT53bebjsftbKSOsmOHBU2AMKw0",
+      "crv": "P-256"
+    },
+    "sealedAt": "2026-08-03T01:32:29.317Z",
+    "note": "Self-signed integrity seal. Identity trust requires an out-of-band trusted public key."
+  }
+}

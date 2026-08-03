@@ -1,0 +1,90 @@
+{
+  "schema": "corpus-os.ingest-manifest.v0",
+  "profile": "project0.corpus-os-proof-subset.v0.1",
+  "status": "raw_bytes_admitted_canonical_json_blocked",
+  "importedAt": "2026-08-03T00:00:00.000Z",
+  "importPolicy": {
+    "originalsImmutable": true,
+    "rawArtifactIdentity": "sha256_over_exact_bytes",
+    "jsonCanonicalIdentity": null,
+    "jsonCanonicalIdentityBlocker": "Project 0 issue #5",
+    "summariesMayReplaceEvidence": false,
+    "machineEdgesAuthoritativeByDefault": false
+  },
+  "bundles": [
+    {
+      "name": "Latent-Design-Grammar-Bundle(1).zip",
+      "bytes": 2334894,
+      "sha256": "da114f1b529ff5b0b2d5ccaea951917d9c0168b0034984bb3416e6b3657be10c",
+      "role": "donor_input"
+    },
+    {
+      "name": "Particularity-Preserving-Artifact-Capsule-Bundle(1).zip",
+      "bytes": 45851,
+      "sha256": "ef794173b98b141e25f3ff661c216139d2d139c3c1dcde172977c679ab9b5176",
+      "role": "donor_input"
+    },
+    {
+      "name": "Pattern-to-Protocol_Living_Synthesis(2).zip",
+      "bytes": 67313,
+      "sha256": "7563b4513c78c3add8f021cf507e13624c1f35c6dccd32f8a84ec6df27b7fb11",
+      "role": "donor_input"
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "corpus/sources/latent-design-grammar/curated_evidence.json",
+      "mediaType": "application/json",
+      "bytes": 42810,
+      "sha256": "5f9fc4e741aaacd0a2135616cd64da7435e6eff0735219ccb88afe06e2aae7db"
+    },
+    {
+      "path": "corpus/sources/latent-design-grammar/formal_model.yaml",
+      "mediaType": "application/yaml",
+      "bytes": 5629,
+      "sha256": "28cc53680015e3f5fbcb39871444f84880f54e8f19f89c028c9dc95b1c0b8ca7"
+    },
+    {
+      "path": "corpus/sources/latent-design-grammar/testable_invariants.md",
+      "mediaType": "text/markdown",
+      "bytes": 4606,
+      "sha256": "7ca4d8187aa7e44db816e899f66289a0b6695bc5cdc8f09a14b3ce3683be0e6b"
+    },
+    {
+      "path": "corpus/sources/pattern-to-protocol/01_pattern_to_protocol_synthesis.md",
+      "mediaType": "text/markdown",
+      "bytes": 28769,
+      "sha256": "6e8239e9c6637a769181e1cbc65ecf4e94e164952e2d6a19709d4fd039df8796"
+    },
+    {
+      "path": "corpus/sources/pattern-to-protocol/02_pattern_catalog.json",
+      "mediaType": "application/json",
+      "bytes": 19118,
+      "sha256": "d9a83eebca0dc03b8df7b2278c50c2dadfe74277a1e1ed9b4ffa5345bc280e25"
+    },
+    {
+      "path": "corpus/sources/particularity-capsule/architecture.md",
+      "mediaType": "text/markdown",
+      "bytes": 2615,
+      "sha256": "48010c27f50fe634b092f3b0f9c96edc37fe68b1c83609fde2238b0e3ce38a5d"
+    },
+    {
+      "path": "corpus/sources/particularity-capsule/capsule.schema.json",
+      "mediaType": "application/schema+json",
+      "bytes": 4860,
+      "sha256": "d5fff810580c19562907836b642920d687826de868a76c1f41f30661da2d9607"
+    },
+    {
+      "path": "corpus/sources/particularity-capsule/demo_capsule.json",
+      "mediaType": "application/json",
+      "bytes": 9875,
+      "sha256": "b1407890e06a62c26560d504b1ff5149bd5d9333d9267d0869f2bde3c230e70a"
+    }
+  ],
+  "declaredAbsences": [
+    {
+      "names": ["Pasted text (1).txt", "Pasted text (2).txt", "Pasted text (3).txt", "Pasted text (4).txt", "Pasted text (5).txt"],
+      "effect": "The original five-file corpus cannot yet be claimed as admitted. Exact return terminates at the bundled curated evidence for cited passages whose original bytes are unavailable."
+    }
+  ]
+}
