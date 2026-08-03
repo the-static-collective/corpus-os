@@ -6,18 +6,70 @@ import Link from "next/link";
 import {
   createIngestedArtifact,
   createIntakeSelector,
+  decodeFatalUtf8,
   detectMediaType,
   exportSessionBundle,
   isAllowedFile,
-  returnToBytes,
-  verifyIntakeSelector,
+  verifiedReturn,
   type ArtifactRef,
   type SelectorVerification,
   type TextSpanSelector,
+  type VerifiedReturn,
 } from "@/lib/intake";
 
 function shortHash(hash: string) {
   return `${hash.slice(0, 15)}…${hash.slice(-8)}`;
+}
+
+/**
+ * Derive exact UTF-16 character offsets from a DOM Range within the source
+ * <pre> element. We insert boundary markers at the range start/end, then
+ * locate the markers in the full text content. This avoids String.indexOf
+ * and correctly distinguishes identical occurrences.
+ */
+function getCharacterOffsets(
+  container: HTMLElement,
+  range: Range,
+): { start: number; end: number } | null {
+  const START_MARKER = "\uFDD0";
+  const END_MARKER = "\uFDD1";
+
+  const doc = container.ownerDocument;
+  if (!doc) return null;
+
+  const startRange = range.cloneRange();
+  const endRange = range.cloneRange();
+
+  startRange.collapse(true);
+  endRange.collapse(false);
+
+  const startMarker = doc.createTextNode(START_MARKER);
+  const endMarker = doc.createTextNode(END_MARKER);
+
+  try {
+    startRange.insertNode(startMarker);
+    endRange.insertNode(endMarker);
+  } catch {
+    return null;
+  }
+
+  const fullText = container.textContent ?? "";
+
+  const start = fullText.indexOf(START_MARKER);
+  const end = fullText.indexOf(END_MARKER);
+
+  // Clean up markers
+  const parent = startMarker.parentNode;
+  if (parent) {
+    parent.removeChild(startMarker);
+  }
+  const endParent = endMarker.parentNode;
+  if (endParent) {
+    endParent.removeChild(endMarker);
+  }
+
+  if (start < 0 || end < 0 || end <= start) return null;
+  return { start, end };
 }
 
 export default function IntakePage() {
@@ -28,8 +80,10 @@ export default function IntakePage() {
   const [error, setError] = useState("");
   const [selectors, setSelectors] = useState<TextSpanSelector[]>([]);
   const [selectedText, setSelectedText] = useState("");
+  const [charBounds, setCharBounds] = useState<{ start: number; end: number } | null>(null);
   const [activeSelectorIndex, setActiveSelectorIndex] = useState<number | null>(null);
   const [verification, setVerification] = useState<SelectorVerification | null>(null);
+  const [verifiedReturnResult, setVerifiedReturnResult] = useState<VerifiedReturn | null>(null);
   const [returnedText, setReturnedText] = useState("");
   const [notice, setNotice] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -40,8 +94,10 @@ export default function IntakePage() {
     setNotice("");
     setSelectors([]);
     setSelectedText("");
+    setCharBounds(null);
     setActiveSelectorIndex(null);
     setVerification(null);
+    setVerifiedReturnResult(null);
     setReturnedText("");
 
     if (!isAllowedFile(file.name)) {
@@ -57,7 +113,17 @@ export default function IntakePage() {
 
     const arrayBuffer = await file.arrayBuffer();
     const bytes = new Uint8Array(arrayBuffer);
-    const text = new TextDecoder("utf-8").decode(bytes);
+
+    // Fatal UTF-8 decoding: reject malformed bytes before presenting as text
+    const text = decodeFatalUtf8(bytes);
+    if (text === null) {
+      setError(
+        `File "${file.name}" contains malformed UTF-8. Raw-byte hash was computed, but ` +
+        `malformed bytes cannot be represented as a faithful immutable text source. ` +
+        `Fix the encoding and re-import.`,
+      );
+      return;
+    }
 
     const ref = await createIngestedArtifact(bytes, {
       mediaType,
@@ -68,7 +134,10 @@ export default function IntakePage() {
     setSourceText(text);
     setSourceBytes(bytes);
     setFileName(file.name);
-    setNotice(`Admitted "${file.name}" — ${bytes.byteLength} bytes, identity ${shortHash(ref.identity)}. Source is immutable in this session.`);
+    setNotice(
+      `Imported "${file.name}" — ${bytes.byteLength} bytes, identity ${shortHash(ref.identity)}. ` +
+      `Source is immutable in this session. No admission authority is claimed.`,
+    );
   }, []);
 
   const onFileChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -80,28 +149,55 @@ export default function IntakePage() {
     const el = sourceDisplayRef.current;
     if (!el) return;
     const selection = window.getSelection();
-    if (!selection || selection.isCollapsed) {
+    if (!selection || selection.isCollapsed || selection.rangeCount === 0) {
       setSelectedText("");
+      setCharBounds(null);
       return;
     }
-    const text = selection.toString();
-    if (text && sourceText.includes(text)) {
+
+    const range = selection.getRangeAt(0);
+    const bounds = getCharacterOffsets(el, range);
+    if (!bounds) {
+      setSelectedText("");
+      setCharBounds(null);
+      return;
+    }
+
+    const text = sourceText.slice(bounds.start, bounds.end);
+    if (text.length > 0) {
       setSelectedText(text);
+      setCharBounds(bounds);
+    } else {
+      setSelectedText("");
+      setCharBounds(null);
     }
   };
 
   const mintSelector = async () => {
-    if (!artifact || !selectedText) return;
+    if (!artifact || !selectedText || !charBounds || !sourceBytes) return;
     setError("");
     try {
-      const selector = await createIntakeSelector(artifact, sourceText, selectedText);
-      const verify = await verifyIntakeSelector(sourceBytes!, selector);
+      const selector = await createIntakeSelector(
+        artifact,
+        sourceText,
+        charBounds.start,
+        charBounds.end,
+      );
+      const verify = await verifiedReturn(sourceBytes, selector);
       setSelectors((prev) => [...prev, selector]);
-      setVerification(verify);
+      setVerification(
+        verify.valid
+          ? { valid: true, code: "verified", extractedBytes: verify.extractedBytes }
+          : { valid: false, code: verify.code },
+      );
       setActiveSelectorIndex(selectors.length);
       setSelectedText("");
+      setCharBounds(null);
       window.getSelection()?.removeAllRanges();
-      setNotice(`Selector minted and verified: utf8:${selector.byteStart}..${selector.byteEnd}, ${shortHash(selector.selectedTextHash)}.`);
+      setNotice(
+        `Selector minted and verified: utf8:${selector.byteStart}..${selector.byteEnd}, ` +
+        `${shortHash(selector.selectedTextHash)}.`,
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not mint selector.");
     }
@@ -109,24 +205,43 @@ export default function IntakePage() {
 
   const verifyExisting = async (selector: TextSpanSelector, index: number) => {
     if (!sourceBytes) return;
-    const result = await verifyIntakeSelector(sourceBytes, selector);
-    setVerification(result);
+    const result = await verifiedReturn(sourceBytes, selector);
+    setVerifiedReturnResult(result);
+    setVerification(
+      result.valid
+        ? { valid: true, code: "verified", extractedBytes: result.extractedBytes }
+        : { valid: false, code: result.code },
+    );
     setActiveSelectorIndex(index);
     if (result.valid && result.extractedBytes) {
       setReturnedText(new TextDecoder("utf-8").decode(result.extractedBytes));
       setNotice(`Selector ${index + 1} verified. Returned to exact bytes.`);
     } else {
       setReturnedText("");
-      setNotice(`Selector ${index + 1} failed: ${result.code.replace(/_/g, " ")}.`);
+      setNotice(`Selector ${index + 1} failed verification: ${result.code.replace(/_/g, " ")}.`);
     }
   };
 
-  const returnToSelectedBytes = (selector: TextSpanSelector, index: number) => {
+  const returnToSelectedBytes = async (selector: TextSpanSelector, index: number) => {
     if (!sourceBytes) return;
-    const bytes = returnToBytes(sourceBytes, selector);
-    setReturnedText(new TextDecoder("utf-8").decode(bytes));
+    // Safe Return: verify artifact identity, bounds, and selected-text hash
+    // before displaying returned content. Never present an unverified selector
+    // as successfully returned.
+    const result = await verifiedReturn(sourceBytes, selector);
+    setVerifiedReturnResult(result);
     setActiveSelectorIndex(index);
-    setNotice(`Returned to bytes ${selector.byteStart}..${selector.byteEnd}.`);
+    if (result.valid && result.extractedBytes) {
+      setReturnedText(new TextDecoder("utf-8").decode(result.extractedBytes));
+      setVerification({ valid: true, code: "verified", extractedBytes: result.extractedBytes });
+      setNotice(`Returned to bytes ${selector.byteStart}..${selector.byteEnd} (verified).`);
+    } else {
+      setReturnedText("");
+      setVerification({ valid: false, code: result.code });
+      setNotice(
+        `Return blocked — selector ${index + 1} failed verification: ` +
+        `${result.code.replace(/_/g, " ")}. Content not displayed.`,
+      );
+    }
   };
 
   const exportBundle = () => {
@@ -141,7 +256,9 @@ export default function IntakePage() {
     anchor.download = `${fileName}.intake-session.json`;
     anchor.click();
     URL.revokeObjectURL(url);
-    setNotice("Session bundle exported. canonicalIdentity is explicitly null — no seal authority claimed.");
+    setNotice(
+      "Session bundle exported. canonicalIdentity is explicitly null — no seal authority claimed.",
+    );
   };
 
   return (
@@ -163,7 +280,7 @@ export default function IntakePage() {
           <div className="section-title-row">
             <div>
               <span className="panel-kicker">step 01 · import</span>
-              <h2>Admit one source file</h2>
+              <h2>Import one source file</h2>
             </div>
             <span className="small-state">.txt · .md · .json</span>
           </div>
@@ -178,9 +295,9 @@ export default function IntakePage() {
             />
             <span className="intake-dropzone-prompt">
               {fileName ? (
-                <>File admitted: <strong>{fileName}</strong></>
+                <>File imported: <strong>{fileName}</strong></>
               ) : (
-                "Choose a .txt, .md, or .json file to admit into this session"
+                "Choose a .txt, .md, or .json file to import into this session"
               )}
             </span>
           </label>
