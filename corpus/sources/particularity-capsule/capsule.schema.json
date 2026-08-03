@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/particularity-capsule.schema.json",
+  "title": "Particularity-Preserving Artifact Capsule",
+  "type": "object",
+  "required": ["schemaVersion", "id", "title", "artifacts", "anchors", "transformations", "validations", "events"],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "id": { "type": "string" },
+    "title": { "type": "string" },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" },
+    "sourceArtifactId": { "type": ["string", "null"] },
+    "activeDerivativeId": { "type": ["string", "null"] },
+    "artifacts": { "type": "array", "items": { "$ref": "#/$defs/artifact" } },
+    "anchors": { "type": "array", "items": { "$ref": "#/$defs/anchor" } },
+    "transformations": { "type": "array", "items": { "$ref": "#/$defs/transformation" } },
+    "validations": { "type": "array", "items": { "$ref": "#/$defs/validation" } },
+    "events": { "type": "array", "items": { "$ref": "#/$defs/event" } },
+    "seal": { "anyOf": [{ "$ref": "#/$defs/seal" }, { "type": "null" }] }
+  },
+  "$defs": {
+    "artifact": {
+      "type": "object",
+      "required": ["id", "kind", "content", "contentType", "sha256", "createdAt", "immutable"],
+      "properties": {
+        "id": { "type": "string" },
+        "kind": { "enum": ["source", "derivative"] },
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "contentType": { "type": "string" },
+        "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "byteLength": { "type": "integer", "minimum": 0 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "immutable": { "const": true },
+        "metadata": { "type": "object" }
+      }
+    },
+    "anchor": {
+      "type": "object",
+      "required": ["id", "sourceArtifactId", "start", "end", "exactText", "label", "category"],
+      "properties": {
+        "id": { "type": "string" },
+        "sourceArtifactId": { "type": "string" },
+        "start": { "type": "integer", "minimum": 0 },
+        "end": { "type": "integer", "minimum": 1 },
+        "exactText": { "type": "string" },
+        "label": { "type": "string" },
+        "category": { "type": "string" },
+        "significance": { "type": "string" }
+      }
+    },
+    "transformation": {
+      "type": "object",
+      "required": ["id", "inputArtifactIds", "outputArtifactId", "actor", "method", "createdAt"],
+      "properties": {
+        "id": { "type": "string" },
+        "inputArtifactIds": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+        "outputArtifactId": { "type": "string" },
+        "anchorIds": { "type": "array", "items": { "type": "string" } },
+        "actor": { "type": "object", "required": ["role", "name"], "properties": { "role": { "const": "generator" }, "name": { "type": "string" } } },
+        "method": { "type": "string" },
+        "parameters": { "type": "object" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "required": ["id", "artifactId", "validator", "decision", "items", "createdAt"],
+      "properties": {
+        "id": { "type": "string" },
+        "artifactId": { "type": "string" },
+        "validator": { "type": "object", "required": ["role", "name"], "properties": { "role": { "const": "validator" }, "name": { "type": "string" } } },
+        "decision": { "enum": ["accepted", "revision_required", "rejected", "provisional"] },
+        "items": { "type": "array", "items": { "type": "object", "required": ["anchorId", "status"], "properties": { "anchorId": { "type": "string" }, "status": { "enum": ["preserved_exact", "transformed_transparently", "omitted_intentionally", "contradicted", "unresolved"] }, "evidence": { "type": "string" }, "notes": { "type": "string" } } } },
+        "unanchoredClaims": { "type": "string" },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "event": {
+      "type": "object",
+      "required": ["id", "type", "at"],
+      "properties": { "id": { "type": "string" }, "type": { "type": "string" }, "payload": { "type": "object" }, "at": { "type": "string", "format": "date-time" } }
+    },
+    "seal": {
+      "type": "object",
+      "required": ["algorithm", "manifestHash", "signature", "publicKeyJwk", "sealedAt"],
+      "properties": {
+        "algorithm": { "const": "ECDSA-P256-SHA256" },
+        "manifestHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "signature": { "type": "string" },
+        "publicKeyJwk": { "type": "object" },
+        "sealedAt": { "type": "string", "format": "date-time" },
+        "note": { "type": "string" }
+      }
+    }
+  }
+}
