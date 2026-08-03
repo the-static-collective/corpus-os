@@ -246,14 +246,14 @@ const repeatedText = [
   "And café réappears once more.",
   "Finally, café réappears a third time.",
   "",
-  "Another phrase: soleil brille",
-  "Repeat: soleil brille again",
-  "Last: soleil brille once more",
+  "Another phrase: café réapparaît",
+  "Repeat: café réapparaît again",
+  "Last: café réapparaît once more",
 ].join("\n");
 
 const repeatedBytes = new TextEncoder().encode(repeatedText);
 const repeatedPhrase1 = "café réappears";
-const repeatedPhrase2 = "soleil brille";
+const repeatedPhrase2 = "café réapparaît";
 
 test("repeated text: three occurrences of the same phrase produce distinct byte bounds", async () => {
   const artifact = await createIngestedArtifact(repeatedBytes, {
