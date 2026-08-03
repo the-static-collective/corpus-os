@@ -26,7 +26,7 @@ Final line for good measure.`;
 const sampleBytes = new TextEncoder().encode(sampleText);
 
 // ── Helper: find character offset of the Nth occurrence of a substring ──
-function nthIndexOf(haystack: string, needle: string, n: number): number {
+function nthIndexOf(haystack, needle, n) {
   let idx = -1;
   for (let i = 0; i < n; i++) {
     idx = haystack.indexOf(needle, idx + 1);
@@ -36,7 +36,7 @@ function nthIndexOf(haystack: string, needle: string, n: number): number {
 }
 
 // ── Helper: compute UTF-8 byte offset for a character offset ──
-function charToByteOffset(text: string, charOffset: number): number {
+function charToByteOffset(text, charOffset) {
   return new TextEncoder().encode(text.slice(0, charOffset)).length;
 }
 
@@ -261,7 +261,7 @@ test("repeated text: three occurrences of the same phrase produce distinct byte 
     originalName: "repeated.txt",
   });
 
-  const selectors: Awaited<ReturnType<typeof createIntakeSelector>>[] = [];
+  const selectors = [];
   for (let occurrence = 1; occurrence <= 3; occurrence++) {
     const charStart = nthIndexOf(repeatedText, repeatedPhrase1, occurrence);
     assert.ok(charStart >= 0, `Occurrence ${occurrence} not found`);
@@ -350,7 +350,7 @@ test("repeated text: non-ASCII repeated phrase produces distinct byte bounds (UT
     originalName: "repeated.txt",
   });
 
-  const selectors2: Awaited<ReturnType<typeof createIntakeSelector>>[] = [];
+  const selectors2 = [];
   for (let occurrence = 1; occurrence <= 3; occurrence++) {
     const charStart = nthIndexOf(repeatedText, repeatedPhrase2, occurrence);
     assert.ok(charStart >= 0, `Occurrence ${occurrence} of "${repeatedPhrase2}" not found`);
