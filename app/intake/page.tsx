@@ -24,7 +24,11 @@ function shortHash(hash: string) {
  * Derive exact UTF-16 character offsets from a DOM Range within the source
  * <pre> element. We insert boundary markers at the range start/end, then
  * locate the markers in the full text content. This avoids String.indexOf
- * and correctly distinguishes identical occurrences.
+ * on the selected text and correctly distinguishes identical occurrences.
+ *
+ * The start marker is inserted first, so when we search for the end marker
+ * in textContent, its position is shifted by the start marker's length.
+ * We subtract that offset to get the true end position.
  */
 function getCharacterOffsets(
   container: HTMLElement,
@@ -32,6 +36,7 @@ function getCharacterOffsets(
 ): { start: number; end: number } | null {
   const START_MARKER = "\uFDD0";
   const END_MARKER = "\uFDD1";
+  const MARKER_LEN = START_MARKER.length;
 
   const doc = container.ownerDocument;
   if (!doc) return null;
@@ -68,7 +73,9 @@ function getCharacterOffsets(
   }
 
   if (start < 0 || end < 0 || end <= start) return null;
-  return { start, end };
+  // The end marker position includes the start marker's character offset,
+  // so subtract MARKER_LEN to get the true end position in the original text.
+  return { start, end: end - MARKER_LEN };
 }
 
 export default function IntakePage() {
