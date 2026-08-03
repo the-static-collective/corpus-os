@@ -22,60 +22,48 @@ function shortHash(hash: string) {
 
 /**
  * Derive exact UTF-16 character offsets from a DOM Range within the source
- * <pre> element. We insert boundary markers at the range start/end, then
- * locate the markers in the full text content. This avoids String.indexOf
- * on the selected text and correctly distinguishes identical occurrences.
+ * <pre> element. Uses the Range's native startOffset/endOffset when the
+ * selection is within a single text node. For selections spanning multiple
+ * nodes, walks the tree to compute the cumulative character offset.
  *
- * The start marker is inserted first, so when we search for the end marker
- * in textContent, its position is shifted by the start marker's length.
- * We subtract that offset to get the true end position.
+ * This avoids String.indexOf on the selected text and correctly distinguishes
+ * identical occurrences without inserting DOM markers (which conflict with
+ * React's virtual DOM reconciliation).
  */
 function getCharacterOffsets(
   container: HTMLElement,
   range: Range,
 ): { start: number; end: number } | null {
-  const START_MARKER = "\uFDD0";
-  const END_MARKER = "\uFDD1";
-  const MARKER_LEN = START_MARKER.length;
-
-  const doc = container.ownerDocument;
-  if (!doc) return null;
-
-  const startRange = range.cloneRange();
-  const endRange = range.cloneRange();
-
-  startRange.collapse(true);
-  endRange.collapse(false);
-
-  const startMarker = doc.createTextNode(START_MARKER);
-  const endMarker = doc.createTextNode(END_MARKER);
-
-  try {
-    startRange.insertNode(startMarker);
-    endRange.insertNode(endMarker);
-  } catch {
-    return null;
+  // Case 1: both endpoints are in the same text node — use offsets directly
+  if (
+    range.startContainer.nodeType === Node.TEXT_NODE &&
+    range.endContainer === range.startContainer
+  ) {
+    return { start: range.startOffset, end: range.endOffset };
   }
 
-  const fullText = container.textContent ?? "";
+  // Case 2: selection spans multiple nodes — walk the tree to compute offsets
+  const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+  let charOffset = 0;
+  let startChar = -1;
+  let endChar = -1;
 
-  const start = fullText.indexOf(START_MARKER);
-  const end = fullText.indexOf(END_MARKER);
-
-  // Clean up markers
-  const parent = startMarker.parentNode;
-  if (parent) {
-    parent.removeChild(startMarker);
+  let node = walker.nextNode();
+  while (node) {
+    const len = node.textContent?.length ?? 0;
+    if (node === range.startContainer) {
+      startChar = charOffset + range.startOffset;
+    }
+    if (node === range.endContainer) {
+      endChar = charOffset + range.endOffset;
+      break;
+    }
+    charOffset += len;
+    node = walker.nextNode();
   }
-  const endParent = endMarker.parentNode;
-  if (endParent) {
-    endParent.removeChild(endMarker);
-  }
 
-  if (start < 0 || end < 0 || end <= start) return null;
-  // The end marker position includes the start marker's character offset,
-  // so subtract MARKER_LEN to get the true end position in the original text.
-  return { start, end: end - MARKER_LEN };
+  if (startChar < 0 || endChar < 0 || endChar <= startChar) return null;
+  return { start: startChar, end: endChar };
 }
 
 export default function IntakePage() {
