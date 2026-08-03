@@ -14,7 +14,6 @@ import {
   type ArtifactRef,
   type SelectorVerification,
   type TextSpanSelector,
-  type VerifiedReturn,
 } from "@/lib/intake";
 
 function shortHash(hash: string) {
@@ -83,7 +82,6 @@ export default function IntakePage() {
   const [charBounds, setCharBounds] = useState<{ start: number; end: number } | null>(null);
   const [activeSelectorIndex, setActiveSelectorIndex] = useState<number | null>(null);
   const [verification, setVerification] = useState<SelectorVerification | null>(null);
-  const [verifiedReturnResult, setVerifiedReturnResult] = useState<VerifiedReturn | null>(null);
   const [returnedText, setReturnedText] = useState("");
   const [notice, setNotice] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -97,7 +95,6 @@ export default function IntakePage() {
     setCharBounds(null);
     setActiveSelectorIndex(null);
     setVerification(null);
-    setVerifiedReturnResult(null);
     setReturnedText("");
 
     if (!isAllowedFile(file.name)) {
@@ -206,7 +203,6 @@ export default function IntakePage() {
   const verifyExisting = async (selector: TextSpanSelector, index: number) => {
     if (!sourceBytes) return;
     const result = await verifiedReturn(sourceBytes, selector);
-    setVerifiedReturnResult(result);
     setVerification(
       result.valid
         ? { valid: true, code: "verified", extractedBytes: result.extractedBytes }
@@ -228,7 +224,6 @@ export default function IntakePage() {
     // before displaying returned content. Never present an unverified selector
     // as successfully returned.
     const result = await verifiedReturn(sourceBytes, selector);
-    setVerifiedReturnResult(result);
     setActiveSelectorIndex(index);
     if (result.valid && result.extractedBytes) {
       setReturnedText(new TextDecoder("utf-8").decode(result.extractedBytes));
@@ -401,7 +396,7 @@ export default function IntakePage() {
                     {verification.code.replace(/_/g, " ")}
                   </span>
                   {verification.valid && returnedText && (
-                    <blockquote className="intake-returned-text">"{returnedText.length > 200 ? returnedText.slice(0, 200) + "…" : returnedText}"</blockquote>
+                    <blockquote className="intake-returned-text">&ldquo;{returnedText.length > 200 ? returnedText.slice(0, 200) + "…" : returnedText}&rdquo;</blockquote>
                   )}
                 </div>
               )}
