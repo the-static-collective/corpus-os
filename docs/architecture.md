@@ -42,6 +42,28 @@ A branch cites one or more exact occurrence IDs. Creating a branch emits a new `
 
 `exportBranchDraft` preserves the branch and its selected roots. Its schema names the artifact a draft, sets `canonicalIdentity` to `null`, and records Project 0 #5 as the blocker. `sealBranchExport` fails closed until the adopted canonicalizer is injected through `CanonicalAddressingPort`.
 
+## Local Intake v0.1
+
+Local Intake is a separate `/intake` route that lets a user import one `.txt`, `.md`, or `.json` file into a browser session and exercise the kernel's exact-span law against it. It reuses the same SHA-256-over-exact-bytes hash law via the Web Crypto API — it does not invent a second serializer or identity law.
+
+### What it does
+
+- imports one file and computes SHA-256 over the exact uploaded bytes;
+- displays the immutable source text in a read-only view;
+- lets the user select an exact text span and mint a `TextSpanSelector`;
+- verifies an existing selector by checking artifact identity, byte bounds, and selected-text hash;
+- navigates return back to the exact selected bytes;
+- exports a portable, explicitly unsealed session bundle.
+
+### What it does not do
+
+- it does not canonicalize semantic JSON objects;
+- it does not persist, admit, or assign canonical identity;
+- it does not add AI, embeddings, auth, database authority, or ontology;
+- every exported object retains `canonicalIdentity: null` until Project 0 #5 is adopted.
+
+The seven canonical views over `ring_6` are unchanged. `ring_6` remains the canonical fixture. Local Intake is additive instrumentation, not a new authority surface.
+
 ## Known fractures
 
 1. **Original-source gap.** The three donor bundles do not contain the five original `Pasted text` inputs. Bundled exact excerpts are admitted; their cited upstream paths remain unresolved.

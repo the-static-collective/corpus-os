@@ -16,6 +16,7 @@
   "include": [
     "kernel/**/*.ts",
     "lib/ring6-fixture.ts",
+    "lib/intake.ts",
     "scripts/verify-corpus.ts"
   ]
 }

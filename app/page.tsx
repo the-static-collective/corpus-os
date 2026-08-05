@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useMemo, useState } from "react";
+import Link from "next/link";
 import {
   branches,
   donorBundles,
@@ -140,6 +141,7 @@ export default function Home() {
         <div className="brand-block">
           <span className="brand">CORPUS OS</span>
           <span className="folio">FOLIO 000006 · α</span>
+          <Link className="intake-link" href="/intake">Local Intake →</Link>
         </div>
         <nav aria-label="Corpus views" className="primary-nav">
           {views.map((item) => (
