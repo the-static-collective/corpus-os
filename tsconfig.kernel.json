@@ -15,8 +15,10 @@
   },
   "include": [
     "kernel/**/*.ts",
+    "runtime/**/*.ts",
     "lib/ring6-fixture.ts",
     "lib/intake.ts",
-    "scripts/verify-corpus.ts"
+    "scripts/verify-corpus.ts",
+    "scripts/corpus-session.ts"
   ]
 }
