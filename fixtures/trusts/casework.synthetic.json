@@ -1,0 +1,80 @@
+{
+  "id": "trust:synthetic-casework-001",
+  "version": "0.1",
+  "kind": "corpus-trust-declaration",
+  "legalValidity": "unclaimed",
+  "purpose": "Preserve a contested case corpus while allowing bounded inspection, challenge, derived work, and delegated transcription without manufacturing factual or legal authority.",
+  "corpusRefs": [
+    "artifact:agreement-a",
+    "artifact:message-001",
+    "artifact:interview-audio-001"
+  ],
+  "participants": [
+    {
+      "id": "person:constitutor",
+      "capacities": ["constitutor"]
+    },
+    {
+      "id": "person:administrator",
+      "capacities": ["administrator"]
+    },
+    {
+      "id": "person:beneficiary",
+      "capacities": ["beneficiary"]
+    },
+    {
+      "id": "person:reviewer",
+      "capacities": ["reviewer"]
+    }
+  ],
+  "powers": [
+    {
+      "capacity": "constitutor",
+      "operation": "inspect",
+      "targetScope": "declaration"
+    },
+    {
+      "capacity": "administrator",
+      "operation": "inspect",
+      "targetScope": "corpus"
+    },
+    {
+      "capacity": "administrator",
+      "operation": "append-derived",
+      "targetScope": "derived"
+    },
+    {
+      "capacity": "administrator",
+      "operation": "invoke-capability",
+      "targetScope": "capability"
+    },
+    {
+      "capacity": "beneficiary",
+      "operation": "inspect",
+      "targetScope": "corpus"
+    },
+    {
+      "capacity": "reviewer",
+      "operation": "inspect",
+      "targetScope": "corpus"
+    },
+    {
+      "capacity": "reviewer",
+      "operation": "challenge",
+      "targetScope": "derived"
+    }
+  ],
+  "capabilities": [
+    {
+      "id": "synthetic.transcribe",
+      "owner": "fixture.transcription-runtime",
+      "allows": ["transcribe"],
+      "nonAuthority": ["declare-fact", "remove-source", "amend-trust"]
+    }
+  ],
+  "forbiddenOperations": [
+    "amend-declaration",
+    "remove-source",
+    "declare-fact"
+  ]
+}
