@@ -62,6 +62,7 @@ export interface TrustOperationRequest {
 
 export type TrustDecisionCode =
   | "TRUST_OPERATION_ADMITTED"
+  | "TRUST_DECLARATION_INVALID"
   | "TRUST_ID_MISMATCH"
   | "TRUST_ACTOR_NOT_DECLARED"
   | "TRUST_CAPACITY_NOT_DECLARED"
@@ -97,12 +98,23 @@ export function validateTrustDeclaration(
 ): TrustDeclarationValidation {
   const errors: string[] = [];
 
+  if (declaration.kind !== "corpus-trust-declaration") {
+    errors.push("Declaration kind must be corpus-trust-declaration.");
+  }
   if (declaration.legalValidity !== "unclaimed") {
     errors.push("Corpus Trust Runtime must not claim legal validity.");
   }
 
   if (!declaration.id.trim()) errors.push("Trust id is required.");
   if (!declaration.purpose.trim()) errors.push("Trust purpose is required.");
+
+  const corpusRefs = new Set<string>();
+  for (const corpusRef of declaration.corpusRefs) {
+    if (corpusRefs.has(corpusRef)) {
+      errors.push(`Duplicate corpus ref: ${corpusRef}`);
+    }
+    corpusRefs.add(corpusRef);
+  }
 
   const participantIds = new Set<string>();
   for (const participant of declaration.participants) {
@@ -172,6 +184,11 @@ export function evaluateTrustOperation(
   declaration: CorpusTrustDeclaration,
   request: TrustOperationRequest,
 ): TrustOperationReceipt {
+  const declarationValidation = validateTrustDeclaration(declaration);
+  if (!declarationValidation.valid) {
+    return receipt(request, false, "TRUST_DECLARATION_INVALID");
+  }
+
   if (request.trustId !== declaration.id) {
     return receipt(request, false, "TRUST_ID_MISMATCH");
   }
