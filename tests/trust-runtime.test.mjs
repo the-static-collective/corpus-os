@@ -30,6 +30,28 @@ test("synthetic casework declaration is internally consistent", () => {
   assert.equal(declaration.legalValidity, "unclaimed");
 });
 
+test("malformed declaration cannot become executable authority", () => {
+  const malformed = {
+    ...declaration,
+    powers: [
+      ...declaration.powers,
+      {
+        capacity: "administrator",
+        operation: "remove-source",
+        targetScope: "corpus",
+      },
+    ],
+  };
+
+  const validation = validateTrustDeclaration(malformed);
+  assert.equal(validation.valid, false);
+  assert.ok(validation.errors.some((error) => error.includes("contradicts forbiddenOperations")));
+
+  const decision = evaluateTrustOperation(malformed, request());
+  assert.equal(decision.admitted, false);
+  assert.equal(decision.code, "TRUST_DECLARATION_INVALID");
+});
+
 test("administrator may inspect an admitted corpus artifact", () => {
   const result = evaluateTrustOperation(declaration, request());
   assert.equal(result.admitted, true);
