@@ -1,0 +1,8 @@
+{
+  "id": "synthetic.echo",
+  "owner": "fixture.synthetic-runtime",
+  "authority": "execution",
+  "transport": "local-process",
+  "allows": ["echo"],
+  "nonAuthority": ["canonicalize", "admit-source", "rewrite-artifact"]
+}

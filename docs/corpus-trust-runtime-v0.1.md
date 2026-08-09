@@ -78,9 +78,9 @@ The evaluator must prove:
 
 ## Relationship to `corpus:session`
 
-This slice is intentionally independent of the pending minimum session proof.
+The minimum session proof is now merged on `main`. This slice remains intentionally independent at runtime: it compiles and tests alongside `corpus:session`, but does not yet wrap, replace, or absorb the session capability registry.
 
-Once that proof is merged, Trust Runtime can become a policy layer around session operations:
+A follow-on integration can make Trust Runtime a policy layer around session operations:
 
 ```text
 human request
@@ -146,7 +146,7 @@ Do not in v0.1:
 
 ## Follow-on horizon
 
-After the evaluator is green and the minimum Corpus session lands:
+With the minimum Corpus session landed and this evaluator green:
 
 1. append trust-operation receipts to session history;
 2. bind powers to exact artifact/collection scopes rather than the current minimal scope classes;
