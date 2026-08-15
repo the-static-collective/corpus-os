@@ -6,9 +6,9 @@
 |---|---|---|
 | Project 0 | normative node/relationship meaning, authority and evidence boundaries, canonical-addressing decision, conformance contract | product UI, corpus-specific motif workflow |
 | TranchNode | reusable append-only storage, accepted-event mechanics, deterministic traversal, portable continuity | Corpus OS views, forced Project 0 compatibility |
-| Corpus OS | corpus ingestion, declared particulars, seven projections, reader branching, baseline experiment | universal ontology, a second canonicalizer, authority manufacture |
+| Corpus OS | corpus ingestion, declared particulars, seven projections, reader branching, bounded authority/execution proof, baseline experiment | universal ontology, a second canonicalizer, authority manufacture |
 
-## Current slice
+## Evidence / return slice
 
 ```text
 pinned donor bytes
@@ -23,6 +23,31 @@ pinned donor bytes
 ```
 
 All seven views are projections over the same `ring_6` snapshot. Selecting a different view cannot create a new canonical fact.
+
+## Adopted warranted execution v0.1
+
+Corpus now has one deliberately local executable authority chain:
+
+```text
+code-owned exact declaration bytes
+→ adopted in-process declaration handle
+→ Trust admission / refusal
+→ issued in-process Action Warrant
+→ Session warrant consumption
+→ Session capability admission / refusal
+→ bounded host execution / failure
+→ launch receipt
+```
+
+The adopted root is the checked-in synthetic Casework declaration at one exact raw-byte SHA-256, trust id, and declaration version. The loader resolves the fixture from module location, hashes the bytes before JSON interpretation, applies the existing structural Trust validation, deep-freezes the declaration, and records the returned handle in a private in-process registry.
+
+Matching representation is not authority. Spread copies, JSON round-trips, and `structuredClone` copies of either the adopted handle or an Action Warrant do not inherit private registry membership.
+
+The host-reaching Session path accepts only a genuine issued warrant. The warrant is consumed synchronously before Session capability admission or any host await. Therefore Session refusal, host failure, and successful completion all leave the same authority spent; replay cannot produce another Session receipt or host consequence.
+
+Lower-level capability policy remains independently testable through a pure admission evaluator. It may inspect hypothetical capability/operation/owner combinations but cannot invoke the host. The raw `CorpusSession.run(capabilityId, operation, input)` consequence shape no longer exists.
+
+This proof establishes **which declaration cut is entitled to admit executable actions**. It does not authenticate a caller as a named participant, establish legal validity, create portable authority, or define declaration succession/revocation law.
 
 ## Exact-span law
 
@@ -69,6 +94,9 @@ The seven canonical views over `ring_6` are unchanged. `ring_6` remains the cano
 1. **Original-source gap.** The three donor bundles do not contain the five original `Pasted text` inputs. Bundled exact excerpts are admitted; their cited upstream paths remain unresolved.
 2. **Canonical JSON gap.** Competing donor serializers exist, but none is adopted by the shared kernel.
 3. **Rejection gap.** Project 0 has a substantive `rejection` node. TranchNode v0.1 has no lossless representation.
-4. **Durability gap.** Reader-created branches are local to the current browser session until append-only storage and accepted-event admission are integrated.
+4. **Durability gap.** Reader-created branches and executable adoption/warrant authority are process-local until append-only storage and accepted-event admission are integrated.
+5. **Caller-authentication gap.** The synthetic Trust declaration distinguishes participant ids/capacities/powers, but this proof does not authenticate the external caller as that participant.
+6. **Temporal-authority gap.** Declaration replacement, revocation, and succession are not defined by v0.1.
+7. **Causal-reconciliation gap.** Linear Authority / Causal Accounting is deliberately deferred to Corpus OS issue #17 after this adopted consequence boundary lands.
 
-These are queryable system states, not prose footnotes to be forgotten.
+These are queryable or explicitly bounded system states, not prose footnotes to be forgotten.
