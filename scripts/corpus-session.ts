@@ -12,7 +12,7 @@ console.log("\n2. capabilities");
 console.log(JSON.stringify(session.capabilities(), null, 2));
 
 console.log("\n3. run synthetic.echo");
-console.log(JSON.stringify(session.run("synthetic.echo", "echo", "hello corpus"), null, 2));
+console.log(JSON.stringify(await session.run("synthetic.echo", "echo", "hello corpus"), null, 2));
 
 console.log("\n4. attempt synthetic.canonicalize [expected refusal]");
-console.log(JSON.stringify(session.run("synthetic.echo", "canonicalize"), null, 2));
+console.log(JSON.stringify(await session.run("synthetic.echo", "canonicalize"), null, 2));

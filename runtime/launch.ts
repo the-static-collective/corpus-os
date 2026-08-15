@@ -1,3 +1,4 @@
+import type { CorpusHostPort, HostFailureCode, HostObservation } from "../host/linux/host-port.js";
 import type { CapabilityDescriptor } from "./capability-registry.js";
 import { capabilityFixtureEvidenceRef } from "./capability-registry.js";
 
@@ -6,21 +7,18 @@ export type RefusalCode =
   | "CAPABILITY_NON_AUTHORITY"
   | "CAPABILITY_OPERATION_NOT_ALLOWED";
 
-export interface HostObservation {
-  platform: NodeJS.Platform;
-}
-
 export interface LaunchReceipt {
   requestId: string;
   capabilityId: string;
   owner: string | null;
   operation: string;
   admitted: boolean;
-  status: "completed" | "refused";
+  status: "completed" | "refused" | "failed";
   outputRefs: string[];
   evidenceRefs: string[];
   hostObservation: HostObservation;
   refusalCode?: RefusalCode;
+  failureCode?: HostFailureCode;
 }
 
 function refusal(
@@ -44,13 +42,14 @@ function refusal(
   };
 }
 
-export function launchCapability(
+export async function launchCapability(
   registry: ReadonlyMap<string, Readonly<CapabilityDescriptor>>,
+  hostPort: CorpusHostPort,
   requestId: string,
   capabilityId: string,
   operation: string,
   input: string,
-): { receipt: LaunchReceipt; output?: string } {
+): Promise<{ receipt: LaunchReceipt; output?: string }> {
   const capability = registry.get(capabilityId);
   if (!capability) {
     return { receipt: refusal(requestId, capabilityId, null, operation, "CAPABILITY_NOT_FOUND") };
@@ -92,9 +91,32 @@ export function launchCapability(
     };
   }
 
-  const output = `echo:${input}`;
+  const hostResult = await hostPort.execute({
+    requestId,
+    capabilityId: capability.id,
+    operation,
+    input,
+  });
+
+  if (hostResult.status === "failed") {
+    return {
+      receipt: {
+        requestId,
+        capabilityId: capability.id,
+        owner: capability.owner,
+        operation,
+        admitted: true,
+        status: "failed",
+        failureCode: hostResult.failureCode,
+        outputRefs: [],
+        evidenceRefs: [capabilityFixtureEvidenceRef, "corpus-particular:ring_6"],
+        hostObservation: hostResult.hostObservation,
+      },
+    };
+  }
+
   return {
-    output,
+    output: hostResult.output,
     receipt: {
       requestId,
       capabilityId: capability.id,
@@ -104,7 +126,7 @@ export function launchCapability(
       status: "completed",
       outputRefs: [`session-output:${requestId}`],
       evidenceRefs: [capabilityFixtureEvidenceRef, "corpus-particular:ring_6"],
-      hostObservation: { platform: process.platform },
+      hostObservation: hostResult.hostObservation,
     },
   };
 }

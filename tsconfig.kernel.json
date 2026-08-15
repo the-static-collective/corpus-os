@@ -16,6 +16,7 @@
   "include": [
     "kernel/**/*.ts",
     "runtime/**/*.ts",
+    "host/**/*.ts",
     "lib/ring6-fixture.ts",
     "lib/intake.ts",
     "lib/trust-runtime.ts",
