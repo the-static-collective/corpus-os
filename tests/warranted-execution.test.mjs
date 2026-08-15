@@ -2,11 +2,15 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
+import { loadAdoptedDeclaration } from "../.kernel-dist/runtime/adopted-declaration.js";
 import { CorpusSession } from "../.kernel-dist/runtime/session.js";
 import { WarrantedCorpusSession } from "../.kernel-dist/runtime/warranted-session.js";
 
 const declaration = JSON.parse(
-  await readFile(new URL("../fixtures/trusts/casework.synthetic.json", import.meta.url), "utf8"),
+  await readFile(
+    new URL("../fixtures/trusts/casework.synthetic.json", import.meta.url),
+    "utf8",
+  ),
 );
 
 function request(overrides = {}) {
@@ -24,7 +28,7 @@ function request(overrides = {}) {
   };
 }
 
-function recordingHost() {
+function recordingHost({ status = "completed" } = {}) {
   const calls = [];
   return {
     calls,
@@ -32,6 +36,17 @@ function recordingHost() {
       host: "linux",
       async execute(execution) {
         calls.push(structuredClone(execution));
+        if (status === "failed") {
+          return {
+            status: "failed",
+            failureCode: "HOST_PROCESS_EXIT_NONZERO",
+            hostObservation: {
+              platform: process.platform,
+              exitCode: 23,
+              signal: null,
+            },
+          };
+        }
         return {
           status: "completed",
           output: `host:${execution.input}`,
@@ -46,16 +61,24 @@ function recordingHost() {
   };
 }
 
-async function makeRuntime({ trust = declaration, hostPort } = {}) {
+async function adoptedHandle() {
+  const adoption = await loadAdoptedDeclaration();
+  assert.equal(adoption.adopted, true);
+  assert.ok(adoption.handle);
+  return adoption.handle;
+}
+
+async function makeRuntime({ adopted = undefined, hostPort } = {}) {
+  const handle = adopted ?? (await adoptedHandle());
   const session = new CorpusSession(hostPort);
   await session.initialize();
   return {
     session,
-    runtime: new WarrantedCorpusSession(trust, session),
+    runtime: new WarrantedCorpusSession(handle, session),
   };
 }
 
-test("administrator trust admission issues a bound warrant and crosses Session + Linux host", async () => {
+test("adopted administrator authority issues a bound warrant and crosses Session + Linux host", async () => {
   const { runtime } = await makeRuntime();
   const result = await runtime.act(request(), "hello warranted corpus");
 
@@ -140,7 +163,10 @@ test("foreign corpus subject is refused before Session or host execution", async
 test("invoke-capability requires an exact corpus subject before a warrant can issue", async () => {
   const host = recordingHost();
   const { runtime } = await makeRuntime({ hostPort: host.port });
-  const result = await runtime.act(request({ targetRef: undefined }), "must not execute");
+  const result = await runtime.act(
+    request({ targetRef: undefined }),
+    "must not execute",
+  );
 
   assert.equal(result.admission.admitted, false);
   assert.equal(result.admission.code, "ACTION_WARRANT_TARGET_REQUIRED");
@@ -184,25 +210,26 @@ test("Trust capability non-authority and unknown operations refuse before Sessio
   }
 });
 
-test("Trust and Session capability owners must agree before execution", async () => {
-  const mismatchedTrust = structuredClone(declaration);
-  mismatchedTrust.capabilities.find((capability) => capability.id === "synthetic.echo").owner =
-    "fixture.mismatched-runtime";
-
+test("a copied adopted-declaration representation cannot authorize a runtime", async () => {
+  const realHandle = await adoptedHandle();
+  const copy = { ...realHandle };
   const host = recordingHost();
-  const { runtime, session } = await makeRuntime({ trust: mismatchedTrust, hostPort: host.port });
-  const admission = runtime.admit(request(), "must not execute");
-  assert.equal(admission.admitted, true);
-  assert.equal(admission.warrant.capabilityOwner, "fixture.mismatched-runtime");
+  const { runtime, session } = await makeRuntime({
+    adopted: copy,
+    hostPort: host.port,
+  });
 
-  const execution = await runtime.execute(admission.warrant);
-  assert.equal(execution.executed, false);
-  assert.equal(execution.code, "ACTION_WARRANT_CAPABILITY_OWNER_MISMATCH");
+  const result = await runtime.act(request(), "must not execute");
+
+  assert.equal(result.admission.admitted, false);
+  assert.equal(result.admission.code, "ACTION_WARRANT_DECLARATION_NOT_ADOPTED");
+  assert.equal(result.admission.trustReceipt, undefined);
+  assert.equal(result.execution, undefined);
   assert.equal(host.calls.length, 0);
   assert.equal(session.recordedReceipts().length, 0);
 });
 
-test("plain objects, spread copies, JSON copies, and structured clones cannot manufacture authority", async () => {
+test("plain objects, spread copies, JSON copies, and structured clones cannot manufacture warrant authority", async () => {
   const host = recordingHost();
   const { runtime } = await makeRuntime({ hostPort: host.port });
   const admission = runtime.admit(request(), "real issued input");
@@ -238,51 +265,22 @@ test("a warrant is one-shot and replay cannot produce a second host consequence"
   assert.equal(session.recordedReceipts().length, 1);
 });
 
-test("Session refusal spends the warrant and cannot be retried under the same authority", async () => {
-  const trustAllowsMoreThanSession = structuredClone(declaration);
-  trustAllowsMoreThanSession.capabilities
-    .find((capability) => capability.id === "synthetic.echo")
-    .allows.push("session-refuses");
-
-  const host = recordingHost();
-  const { runtime, session } = await makeRuntime({
-    trust: trustAllowsMoreThanSession,
-    hostPort: host.port,
-  });
-  const admission = runtime.admit(
-    request({
-      requestId: "request:session-refusal",
-      capabilityOperation: "session-refuses",
-    }),
-    "once even when refused",
-  );
+test("host failure is a terminal admitted attempt under the adopted warrant", async () => {
+  const host = recordingHost({ status: "failed" });
+  const { runtime, session } = await makeRuntime({ hostPort: host.port });
+  const admission = runtime.admit(request(), "fails once");
   assert.equal(admission.admitted, true);
 
   const first = await runtime.execute(admission.warrant);
   const second = await runtime.execute(admission.warrant);
 
-  assert.equal(first.executed, false);
-  assert.equal(first.code, "ACTION_WARRANT_SESSION_REFUSED");
-  assert.equal(first.launch.receipt.admitted, false);
-  assert.equal(first.launch.receipt.refusalCode, "CAPABILITY_OPERATION_NOT_ALLOWED");
+  assert.equal(first.executed, true);
+  assert.equal(first.code, "ACTION_WARRANT_EXECUTED");
+  assert.equal(first.launch.receipt.admitted, true);
+  assert.equal(first.launch.receipt.status, "failed");
+  assert.equal(first.launch.receipt.failureCode, "HOST_PROCESS_EXIT_NONZERO");
   assert.equal(second.executed, false);
   assert.equal(second.code, "ACTION_WARRANT_ALREADY_CONSUMED");
-  assert.equal(host.calls.length, 0);
+  assert.equal(host.calls.length, 1);
   assert.equal(session.recordedReceipts().length, 1);
-});
-
-test("warrant authority cut is bound to the declaration id and version used for execution", async () => {
-  const host = recordingHost();
-  const { session, runtime } = await makeRuntime({ hostPort: host.port });
-  const admission = runtime.admit(request(), "old authority cut");
-  assert.equal(admission.admitted, true);
-
-  const changedDeclaration = { ...declaration, version: "0.2" };
-  const changedRuntime = new WarrantedCorpusSession(changedDeclaration, session);
-  const execution = await changedRuntime.execute(admission.warrant);
-
-  assert.equal(execution.executed, false);
-  assert.equal(execution.code, "ACTION_WARRANT_AUTHORITY_CUT_MISMATCH");
-  assert.equal(host.calls.length, 0);
-  assert.equal(session.recordedReceipts().length, 0);
 });
