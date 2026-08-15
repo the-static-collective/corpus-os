@@ -1,6 +1,8 @@
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
+import { LinuxLocalProcessHostPort } from "../host/linux/local-process-adapter.js";
+import type { CorpusHostPort } from "../host/linux/host-port.js";
 import { ring6Snapshot } from "../kernel/ring6.js";
 import { sourceOccurrences, verifyTextSpan, type TextSpanSelector } from "../kernel/index.js";
 import { loadCapabilityRegistry, type CapabilityDescriptor } from "./capability-registry.js";
@@ -24,6 +26,10 @@ export class CorpusSession {
   private requestSequence = 0;
   private readonly receipts: LaunchReceipt[] = [];
   private registry: ReadonlyMap<string, Readonly<CapabilityDescriptor>> | null = null;
+
+  constructor(
+    private readonly hostPort: CorpusHostPort = new LinuxLocalProcessHostPort(),
+  ) {}
 
   async initialize(): Promise<void> {
     this.registry = await loadCapabilityRegistry();
@@ -70,9 +76,14 @@ export class CorpusSession {
     return [...this.requireRegistry().values()];
   }
 
-  run(capabilityId: string, operation: string, input = ""): { receipt: LaunchReceipt; output?: string } {
-    const result = launchCapability(
+  async run(
+    capabilityId: string,
+    operation: string,
+    input = "",
+  ): Promise<{ receipt: LaunchReceipt; output?: string }> {
+    const result = await launchCapability(
       this.requireRegistry(),
+      this.hostPort,
       this.nextRequestId(),
       capabilityId,
       operation,
