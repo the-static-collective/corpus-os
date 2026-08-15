@@ -2,13 +2,14 @@
 
 **An operating environment for bodies of evidence, ideas, authority, action, and return.**
 
-Corpus OS is the first falsifiable downstream proof of the Project 0 / TranchNode architecture. It does not summarize a corpus and call the summary memory. It preserves admitted source bytes, declared particulars, attributed transformations, plural readings, explicit disagreement, bounded execution, refusal, and routes back to evidence.
+Corpus OS is the first falsifiable downstream proof of the Project 0 / TranchNode architecture. It does not summarize a corpus and call the summary memory. It preserves admitted source bytes, declared particulars, attributed transformations, plural readings, explicit disagreement, bounded execution, refusal, causal accounting, and routes back to evidence.
 
-The original proof particular is `ring_6`. The system now also composes three executable operating-environment concerns:
+The original proof particular is `ring_6`. The system now also composes four executable operating-environment concerns:
 
 - **Corpus Trust Runtime** — evaluate who is named as acting, in which declared capacity, under which power, against which constituted corpus, with explicit admission or refusal;
 - **Adopted Action Warrant** — bind admitted executable authority to one code-owned declaration cut and exact operation input without making copied representation executable;
-- **Corpus Session** — consume a genuine warrant before capability admission, execute only through the declared capability owner, and return a deterministic refusal/completion/failure receipt.
+- **Corpus Session** — consume a genuine warrant before capability admission, execute only through the declared capability owner, and return a deterministic refusal/completion/failure receipt;
+- **Causal Accounting** — derive a pure reconciliation view that keeps warrant spend state distinct from terminal history and detects causal anomalies without repairing them.
 
 The first major product vertical growing from those laws is **Corpus Casework**:
 
@@ -36,8 +37,19 @@ The first major product vertical growing from those laws is **Corpus Casework**:
 - `CorpusSession.run(...)` accepts only a genuine issued warrant, not raw capability/operation/input tuples;
 - the warrant is consumed before Session capability admission or host await, so Session refusal, host failure, and completion all leave it spent;
 - a replay cannot produce a second Session receipt or host consequence;
+- every terminal launch receipt carries an inspectable causal binding copied from the already-consumed genuine warrant;
 - lower-level capability policy remains testable through a pure evaluator that cannot invoke the host;
 - every declaration, adoption handle, warrant, and Trust decision in this proof keeps legal validity unclaimed.
+
+### Causal accounting / linear authority
+
+- issued warrant resource state is inspectable as `unspent` or `spent` without making copied warrant representations authoritative;
+- reconciliation preserves `unspent`, `session-refused`, `host-failed`, and `completed` as distinct dispositions instead of collapsing them into `spent`;
+- pre-warrant refusal creates no executable warrant, Session receipt, or host consequence under this boundary;
+- a rejected replay is distinguishable from fabricated evidence of a second consequence;
+- orphan effects, double-spend histories, substituted consequence fields, broken authority-cut lineage, and spent authority missing terminal evidence are represented as anomalies rather than silently normalized;
+- reconciliation is a pure in-process view over genuine issued warrants and terminal receipts and does not mutate declarations, warrants, receipts, or caller evidence;
+- no durable ledger, canonical serialization, signature scheme, network authority, token semantics, or automatic repair is claimed.
 
 ### Trust-shaped administration
 
@@ -70,7 +82,13 @@ capability admission / refusal
         ↓
 bounded host completion / failure
         ↓
-receipts + return to evidence/history
+terminal receipt + warrant-bound causal evidence
+        ↓
+pure causal reconciliation
+        ↓
+balanced history OR explicit anomaly
+        ↓
+return to evidence/history
 ```
 
 ## The honest boundary
@@ -85,7 +103,9 @@ The original five `Pasted text` files are absent from the three pinned donor bun
 
 The Trust Runtime is structural and computational. It does **not** determine or claim trust formation, title, beneficial ownership, fiduciary duty, tax treatment, legal capacity, conveyance, enforceability, or any other jurisdiction-specific legal conclusion. Corpus can administer a declared structure without asserting that civil law recognizes it.
 
-Linear Authority / Causal Accounting remains a separate post-boundary proof in issue #17. This slice does not yet claim a durable reconciled administration ledger or provable global non-action.
+Causal Accounting is also deliberately bounded. It proves reconciliation only for evidence presented to this in-process Corpus consequence boundary. Its anomaly names describe computational integrity states, not legal invalidity, fraud, financial accounting status, or proof that no similar act occurred elsewhere. It does not yet provide a durable administration ledger.
+
+Lawful Reachability / Constituted Reality remains downstream in issue #20. This slice establishes balanced causal history for that work to consume; it does not derive `WorldCut`, decide which observed bytes constitute lawful present state, or otherwise implement #20.
 
 ## Run it
 
@@ -106,6 +126,7 @@ npm run test:session
 npm run test:trust
 npm run test:adoption
 npm run test:warrant
+npm run test:causal
 npm run corpus:session
 npm run build
 ```
@@ -115,16 +136,17 @@ npm run build
 - `app/` — the seven-view navigation instrument and local branch composer.
 - `kernel/` — exact-span verification, deterministic queries, branch draft export, and the canonical-addressing port.
 - `runtime/adopted-declaration.ts` — code-owned exact-byte adoption root and private adopted-handle registry.
-- `runtime/action-warrant.ts` — adopted-only warrant issuance plus one-shot in-process consumption law.
-- `runtime/session.ts` / `runtime/launch.ts` — warrant-required Session consequence boundary, capability admission, host execution, and receipts.
+- `runtime/action-warrant.ts` — adopted-only warrant issuance, one-shot in-process consumption law, and read-only spend-state inspection.
+- `runtime/session.ts` / `runtime/launch.ts` — warrant-required Session consequence boundary, capability admission, host execution, terminal receipts, and warrant-bound causal evidence.
+- `runtime/causal-accounting.ts` — pure reconciliation of genuine issued warrants to terminal dispositions and explicit causal anomalies.
 - `lib/trust-runtime.ts` — deterministic trust-shaped admission/refusal evaluator.
 - `fixtures/capabilities/` — synthetic capability fixture for Session policy/execution.
 - `fixtures/trusts/` — synthetic constituted-corpus declaration for Casework and local adoption proof.
 - `corpus/manifest.json` — pinned input policy, hashes, admitted artifacts, and declared absences.
 - `corpus/sources/` — exact text artifacts extracted from the pinned donor bundles.
 - `lib/ring6-fixture.ts` — typed `ring_6` proof data.
-- `tests/` — adversarial continuity, intake, Trust, adoption, warrant, Session, browser, and rendered-output tests.
-- `docs/architecture.md` — application and authority boundaries.
+- `tests/` — adversarial continuity, intake, Trust, adoption, warrant, Session, causal accounting, browser, and rendered-output tests.
+- `docs/architecture.md` — application, authority, consequence, and causal-accounting boundaries.
 - `docs/corpus-trust-runtime-v0.1.md` — Trust Runtime laws, execution composition, Casework vertical, non-goals, and follow-on horizon.
 - `docs/profile-matrix.md` — Project 0 / TranchNode compatibility matrix.
 - `docs/baseline-experiment.md` — reproducible comparison against Git + Markdown + search.
@@ -166,5 +188,7 @@ The differentiator is continuity across:
 > No conclusion may become easier to reach than its evidence is to recover.
 
 > No host consequence through the Corpus Session boundary without a genuine issued warrant under the adopted cut.
+
+> Spent authority is not terminal history; every spent causal path must remain distinguishable by what became of its attempt.
 
 Confidence is not evidence. Hashing is not truth. Retrieval is not authority. Similarity is not lineage. Execution is not authority. Possession is not truth.
