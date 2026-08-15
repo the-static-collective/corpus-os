@@ -1,5 +1,6 @@
 import { spawn } from "node:child_process";
-import { resolve } from "node:path";
+import { dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import type {
   AdmittedHostExecution,
@@ -8,8 +9,14 @@ import type {
 } from "./host-port.js";
 
 const FIXED_ADAPTERS = new Map<string, string>([
-  ["synthetic.echo:echo", "fixtures/host/synthetic-echo.mjs"],
-  ["synthetic.fail:fail", "fixtures/host/synthetic-fail.mjs"],
+  [
+    "synthetic.echo:echo",
+    fileURLToPath(new URL("../../../fixtures/host/synthetic-echo.mjs", import.meta.url)),
+  ],
+  [
+    "synthetic.fail:fail",
+    fileURLToPath(new URL("../../../fixtures/host/synthetic-fail.mjs", import.meta.url)),
+  ],
 ]);
 
 function failedStart(): HostExecutionResult {
@@ -36,7 +43,9 @@ export class LinuxLocalProcessHostPort implements CorpusHostPort {
     return new Promise((resolveResult) => {
       let child;
       try {
-        child = spawn(process.execPath, [resolve(process.cwd(), adapterPath)], {
+        child = spawn(process.execPath, [adapterPath], {
+          cwd: dirname(adapterPath),
+          env: {},
           shell: false,
           stdio: ["pipe", "pipe", "pipe"],
         });
