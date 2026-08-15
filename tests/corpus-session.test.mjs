@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
+import { LinuxLocalProcessHostPort } from "../.kernel-dist/host/linux/local-process-adapter.js";
 import { CorpusSession } from "../.kernel-dist/runtime/session.js";
 
 async function makeSession(hostPort) {
@@ -98,6 +99,21 @@ test("an admitted host failure becomes a failed receipt rather than false succes
   assert.equal(result.receipt.status, "failed");
   assert.equal(result.receipt.failureCode, "HOST_PROCESS_EXIT_NONZERO");
   assert.equal(result.receipt.hostObservation.exitCode, 23);
+});
+
+test("fixed non-zero host specimen reports observed exit instead of start failure", async () => {
+  const hostPort = new LinuxLocalProcessHostPort();
+  const result = await hostPort.execute({
+    requestId: "host-failure-0001",
+    capabilityId: "synthetic.fail",
+    operation: "fail",
+    input: "data only",
+  });
+
+  assert.equal(result.status, "failed");
+  assert.equal(result.failureCode, "HOST_PROCESS_EXIT_NONZERO");
+  assert.equal(result.hostObservation.exitCode, 23);
+  assert.equal(result.hostObservation.signal, null);
 });
 
 test("canonicalize is refused before the host port is invoked", async () => {
