@@ -4,20 +4,21 @@
 
 **Goal:** Add a pure deterministic `deriveWorldCut(...)` projection that derives constituted state from an adopted root, balanced Causal Accounting records, and observed refs without granting authority, executing capabilities, repairing history, or inventing portable world identity.
 
-**Architecture:** Lawful Reachability is a read-only projection downstream of Corpus OS issue #17. It consumes the adopted root plus balanced terminal causal records and observations, traverses only causally closed records under the exact adopted authority cut, admits only supported successful output refs into constituted state, records spent-authority history for failed/refused terminal attempts, and leaves unsupported observations and accounting anomalies explicitly non-constituting. The first proof remains in-process and synthetic.
+**Architecture:** Lawful Reachability is a read-only projection downstream of Corpus OS issue #17. It traverses only balanced causal records under the exact adopted authority cut. Completed records may constitute output refs; Session refusal after warrant spend and host failure advance a preserved terminal-history projection without manufacturing successful outputs. Unsupported observations and accounting anomalies remain explicitly non-constituting.
 
 **Tech Stack:** TypeScript, Node.js 22+, Node built-in test runner, existing Corpus OS runtime/kernel compilation, existing `npm run check` gate.
 
 ## Global Constraints
 
 - **Hard dependency:** Do not implement this plan until Corpus OS issue #17 has landed on `main` and exposes the Causal Accounting reconciliation evidence used below.
-- Lawful Reachability must consume Causal Accounting; it must not redefine warrant issuance, warrant spending, adopted declarations, Session admission, host execution, or reconciliation.
-- `deriveWorldCut(...)` must be pure and must not mutate declarations, warrants, causal records, receipts, observations, source evidence, Session state, or host state.
-- The projection must grant no authority, issue/consume no warrants, invoke no Session capability, and expose no host-reaching path.
-- Only balanced causal records under the exact adopted `trustId` + `authorityCut` may constitute state.
-- `completed` records may constitute declared consequence output refs; `host-failed` and `session-refused` records advance spent-authority history but must not manufacture successful outputs.
-- Pre-warrant refusal is witnessed non-transition evidence, not a spent-authority consequential transition.
-- Causal Accounting anomalies (`ORPHAN_EFFECT`, `DOUBLE_SPEND`, `SUBSTITUTED_CONSEQUENCE`, `BROKEN_LINEAGE`) must never silently become lawful reachability edges.
+- Lawful Reachability consumes Causal Accounting; it must not redefine warrant issuance, warrant spending, adopted declarations, Session admission, host execution, or reconciliation.
+- `deriveWorldCut(...)` is pure: it mutates no declaration, warrant, causal record, receipt, observation, source evidence, Session state, or host state.
+- The projection grants no authority, issues/consumes no warrants, invokes no Session capability, and exposes no host-reaching path.
+- Only balanced causal records under the exact adopted `trustId` + `authorityCut` may constitute state or terminal history.
+- `completed` may constitute declared consequence output refs.
+- `host-failed` and `session-refused` must remain distinguishable terminal historical states and must not manufacture successful outputs.
+- `unspent` / pre-consequence evidence is not a spent-authority historical transition.
+- Causal Accounting anomalies (`ORPHAN_EFFECT`, `DOUBLE_SPEND`, `SUBSTITUTED_CONSEQUENCE`, `BROKEN_LINEAGE`) never silently become lawful reachability edges.
 - Unsupported observed refs remain visible as `ORPHAN_OBSERVATION`; they are not deleted, repaired, quarantined, declared false, or silently admitted.
 - No canonical JSON hash, canonical world identifier, signature, seal, PKI, portable warrant, database, persistence layer, second event store, scheduler, automatic repair, legal-validity claim, counterfactual administration, or prospective reachability is introduced.
 - `legalValidity` remains exactly `"unclaimed"`.
@@ -26,9 +27,9 @@
 
 ## Upstream dependency contract
 
-Issue #17's implementation must provide a read-only reconciled record equivalent to the approved Causal Accounting design. The implementation worker must verify the landed symbol names before starting; if names differ, use a narrow type-only adapter in `runtime/world-cut.ts` rather than modifying #17 semantics.
+Issue #17 must expose read-only reconciliation evidence equivalent to the approved Causal Accounting design. If the landed names differ, adapt them through a narrow type-only/field-mapping boundary in `runtime/world-cut.ts`; do not change #17 semantics merely to satisfy this plan.
 
-The reachability layer requires these semantics from each reconciled record:
+Lawful Reachability needs this narrow semantic shape:
 
 ```ts
 type CausalDisposition =
@@ -36,8 +37,6 @@ type CausalDisposition =
   | "session-refused"
   | "host-failed"
   | "completed";
-
-type CausalBalance = "balanced" | "anomaly";
 
 type CausalAnomalyCode =
   | "ORPHAN_EFFECT"
@@ -56,20 +55,16 @@ interface ReachabilityCause {
   readonly trustRequestId: string;
 }
 
-interface ReachabilityConsequence {
-  readonly outputRefs: readonly string[];
-}
-
 interface ReachabilityCausalRecord {
   readonly cause: ReachabilityCause;
   readonly disposition: CausalDisposition;
-  readonly consequence?: ReachabilityConsequence;
-  readonly balance: CausalBalance;
+  readonly consequence?: { readonly outputRefs: readonly string[] };
+  readonly balance: "balanced" | "anomaly";
   readonly anomalyCode?: CausalAnomalyCode;
 }
 ```
 
-This interface is intentionally narrower than the full accounting object. Lawful Reachability needs only the data required to prove closure; it must not import executable warrant authority.
+This is intentionally narrower than the full accounting object. No executable warrant object crosses into the reachability projection.
 
 ---
 
@@ -78,15 +73,15 @@ This interface is intentionally narrower than the full accounting object. Lawful
 **Files:**
 - Create: `runtime/world-cut.ts`
 - Create: `tests/lawful-reachability.test.mjs`
-- Modify: `tsconfig.kernel.json` only if the existing runtime glob does not already compile `runtime/world-cut.ts`
+- Modify: `tsconfig.kernel.json` only if the existing runtime include/glob does not compile `runtime/world-cut.ts`
 
 **Interfaces:**
-- Consumes: the upstream dependency semantics in `ReachabilityCausalRecord` plus an adopted-root descriptor `{ trustId, authorityCut, constitutedRefs }`.
-- Produces: `deriveWorldCut(input: DeriveWorldCutInput): Readonly<WorldCut>` and exported read-only TypeScript interfaces used by Tasks 2–4.
+- Consumes: `ConstitutedRoot`, `ReachabilityCausalRecord[]`, `observations[]`.
+- Produces: `deriveWorldCut(input: DeriveWorldCutInput): Readonly<WorldCut>`.
 
-- [ ] **Step 1: Write the failing completed-consequence test**
+- [ ] **Step 1: Write the first failing test**
 
-Add a fixture directly in `tests/lawful-reachability.test.mjs` so the first proof does not depend on Session/host execution:
+Create `tests/lawful-reachability.test.mjs`:
 
 ```js
 import assert from "node:assert/strict";
@@ -124,43 +119,43 @@ function completedRecord(overrides = {}) {
   });
 }
 
-test("balanced completed consequence constitutes its output under the adopted root", () => {
+test("balanced completion constitutes output and preserves terminal history", () => {
   const world = deriveWorldCut({
     root,
     causalRecords: [completedRecord()],
     observations: ["session-output:session-request-0001"],
   });
 
-  assert.deepEqual(world.root, {
-    trustId: root.trustId,
-    authorityCut: root.authorityCut,
-  });
   assert.deepEqual(world.constitutedRefs, [
     "artifact:agreement-a",
     "artifact:correspondence-a",
     "session-output:session-request-0001",
   ]);
-  assert.equal(world.spentCauses.length, 1);
+  assert.deepEqual(world.terminalHistory, [
+    {
+      cause: completedRecord().cause,
+      disposition: "completed",
+      outputRefs: ["session-output:session-request-0001"],
+    },
+  ]);
   assert.deepEqual(world.orphanObservations, []);
   assert.deepEqual(world.unresolved, []);
   assert.equal(world.legalValidity, "unclaimed");
 });
 ```
 
-- [ ] **Step 2: Run the focused test and verify RED**
-
-Run:
+- [ ] **Step 2: Run the test and verify RED**
 
 ```bash
 npm run build:kernel
 node --test tests/lawful-reachability.test.mjs
 ```
 
-Expected: FAIL because `runtime/world-cut.ts` / compiled `world-cut.js` does not exist.
+Expected: FAIL because `world-cut.js` does not exist.
 
-- [ ] **Step 3: Implement the minimum read-only world-cut types and completed closure**
+- [ ] **Step 3: Implement the minimum projection contract**
 
-Create `runtime/world-cut.ts` with these public contracts:
+Create `runtime/world-cut.ts`:
 
 ```ts
 export type CausalDisposition =
@@ -168,6 +163,8 @@ export type CausalDisposition =
   | "session-refused"
   | "host-failed"
   | "completed";
+
+export type TerminalDisposition = Exclude<CausalDisposition, "unspent">;
 
 export type CausalAnomalyCode =
   | "ORPHAN_EFFECT"
@@ -189,9 +186,7 @@ export interface ReachabilityCause {
 export interface ReachabilityCausalRecord {
   readonly cause: ReachabilityCause;
   readonly disposition: CausalDisposition;
-  readonly consequence?: {
-    readonly outputRefs: readonly string[];
-  };
+  readonly consequence?: { readonly outputRefs: readonly string[] };
   readonly balance: "balanced" | "anomaly";
   readonly anomalyCode?: CausalAnomalyCode;
 }
@@ -200,6 +195,12 @@ export interface ConstitutedRoot {
   readonly trustId: string;
   readonly authorityCut: string;
   readonly constitutedRefs: readonly string[];
+}
+
+export interface TerminalHistoryEntry {
+  readonly cause: ReachabilityCause;
+  readonly disposition: TerminalDisposition;
+  readonly outputRefs: readonly string[];
 }
 
 export interface OrphanObservation {
@@ -216,7 +217,7 @@ export interface ReachabilityIssue {
 export interface WorldCut {
   readonly root: Readonly<Pick<ConstitutedRoot, "trustId" | "authorityCut">>;
   readonly constitutedRefs: readonly string[];
-  readonly spentCauses: readonly ReachabilityCause[];
+  readonly terminalHistory: readonly TerminalHistoryEntry[];
   readonly unresolved: readonly ReachabilityIssue[];
   readonly orphanObservations: readonly OrphanObservation[];
   readonly legalValidity: "unclaimed";
@@ -227,18 +228,24 @@ export interface DeriveWorldCutInput {
   readonly causalRecords: readonly ReachabilityCausalRecord[];
   readonly observations: readonly string[];
 }
-```
 
-Implement only the completed/balanced/root-matching path first:
-
-```ts
 function uniqueSorted(values: Iterable<string>): readonly string[] {
   return Object.freeze([...new Set(values)].sort());
 }
 
+function terminalDisposition(
+  value: CausalDisposition,
+): value is TerminalDisposition {
+  return (
+    value === "session-refused" ||
+    value === "host-failed" ||
+    value === "completed"
+  );
+}
+
 export function deriveWorldCut(input: DeriveWorldCutInput): Readonly<WorldCut> {
   const constituted = new Set(input.root.constitutedRefs);
-  const spentCauses: ReachabilityCause[] = [];
+  const terminalHistory: TerminalHistoryEntry[] = [];
 
   for (const record of input.causalRecords) {
     if (
@@ -249,16 +256,29 @@ export function deriveWorldCut(input: DeriveWorldCutInput): Readonly<WorldCut> {
       continue;
     }
 
-    if (record.disposition !== "unspent") {
-      spentCauses.push(Object.freeze({ ...record.cause }));
-    }
+    if (terminalDisposition(record.disposition)) {
+      const outputRefs =
+        record.disposition === "completed"
+          ? uniqueSorted(record.consequence?.outputRefs ?? [])
+          : Object.freeze([] as string[]);
 
-    if (record.disposition === "completed") {
-      for (const ref of record.consequence?.outputRefs ?? []) {
-        constituted.add(ref);
+      terminalHistory.push(
+        Object.freeze({
+          cause: Object.freeze({ ...record.cause }),
+          disposition: record.disposition,
+          outputRefs,
+        }),
+      );
+
+      if (record.disposition === "completed") {
+        for (const ref of outputRefs) constituted.add(ref);
       }
     }
   }
+
+  terminalHistory.sort((a, b) =>
+    a.cause.trustRequestId.localeCompare(b.cause.trustRequestId),
+  );
 
   return Object.freeze({
     root: Object.freeze({
@@ -266,7 +286,7 @@ export function deriveWorldCut(input: DeriveWorldCutInput): Readonly<WorldCut> {
       authorityCut: input.root.authorityCut,
     }),
     constitutedRefs: uniqueSorted(constituted),
-    spentCauses: Object.freeze(spentCauses),
+    terminalHistory: Object.freeze(terminalHistory),
     unresolved: Object.freeze([]),
     orphanObservations: Object.freeze([]),
     legalValidity: "unclaimed",
@@ -274,11 +294,9 @@ export function deriveWorldCut(input: DeriveWorldCutInput): Readonly<WorldCut> {
 }
 ```
 
-Sort output refs to make equality independent of input ordering; do not create a hash or canonical serializer.
+The `terminalHistory` field is load-bearing: it prevents Session refusal, host failure, and completion from collapsing into an undifferentiated “spent” state.
 
 - [ ] **Step 4: Run the focused test and verify GREEN**
-
-Run:
 
 ```bash
 npm run build:kernel
@@ -287,26 +305,27 @@ node --test tests/lawful-reachability.test.mjs
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit the completed-consequence floor**
+- [ ] **Step 5: Commit**
 
 ```bash
-git add runtime/world-cut.ts tests/lawful-reachability.test.mjs tsconfig.kernel.json
-git commit -m "feat: derive constituted world cut from balanced completion"
+git add runtime/world-cut.ts tests/lawful-reachability.test.mjs
+git add tsconfig.kernel.json 2>/dev/null || true
+git commit -m "feat: derive constituted world cut from balanced history"
 ```
 
 ---
 
-### Task 2: Prove failure/refusal history and pre-warrant non-transition
+### Task 2: Prove failed/refused history and pre-warrant non-transition
 
 **Files:**
 - Modify: `runtime/world-cut.ts`
 - Modify: `tests/lawful-reachability.test.mjs`
 
 **Interfaces:**
-- Consumes: `deriveWorldCut(...)` and `ReachabilityCausalRecord` from Task 1.
-- Produces: correct spent-authority history for `session-refused` and `host-failed`, while `unspent` records do not enter `spentCauses` or constitute outputs.
+- Consumes: Task 1 `deriveWorldCut(...)`.
+- Produces: distinct `host-failed`, `session-refused`, and `completed` terminal history; `unspent` remains non-terminal.
 
-- [ ] **Step 1: Add failing tests for host failure, Session refusal, and pre-warrant/no-spend evidence**
+- [ ] **Step 1: Add the three disposition tests**
 
 Append:
 
@@ -322,82 +341,80 @@ function terminalRecord(disposition, requestId) {
   });
 }
 
-test("host failure advances spent-authority history without constituting an output", () => {
+test("host failure advances history without manufacturing output", () => {
   const world = deriveWorldCut({
     root,
     causalRecords: [terminalRecord("host-failed", "request:failed")],
     observations: [],
   });
 
-  assert.equal(world.spentCauses.length, 1);
-  assert.equal(world.spentCauses[0].trustRequestId, "request:failed");
+  assert.deepEqual(world.terminalHistory.map((entry) => entry.disposition), [
+    "host-failed",
+  ]);
+  assert.deepEqual(world.terminalHistory[0].outputRefs, []);
   assert.deepEqual(world.constitutedRefs, [...root.constitutedRefs].sort());
 });
 
-test("Session refusal after warrant spend advances history without constituting an output", () => {
+test("Session refusal after spend advances a distinguishable history", () => {
   const world = deriveWorldCut({
     root,
     causalRecords: [terminalRecord("session-refused", "request:refused")],
     observations: [],
   });
 
-  assert.equal(world.spentCauses.length, 1);
-  assert.equal(world.spentCauses[0].trustRequestId, "request:refused");
-  assert.deepEqual(world.constitutedRefs, [...root.constitutedRefs].sort());
+  assert.deepEqual(world.terminalHistory.map((entry) => entry.disposition), [
+    "session-refused",
+  ]);
+  assert.deepEqual(world.terminalHistory[0].outputRefs, []);
 });
 
-test("unspent or pre-consequence evidence creates no spent cause and no constituted output", () => {
+test("unspent evidence is not a consequential state transition", () => {
   const world = deriveWorldCut({
     root,
     causalRecords: [terminalRecord("unspent", "request:never-crossed")],
     observations: [],
   });
 
-  assert.deepEqual(world.spentCauses, []);
+  assert.deepEqual(world.terminalHistory, []);
   assert.deepEqual(world.constitutedRefs, [...root.constitutedRefs].sort());
 });
 ```
 
-- [ ] **Step 2: Run the focused tests**
-
-Run:
+- [ ] **Step 2: Run the focused test file**
 
 ```bash
 npm run build:kernel
 node --test tests/lawful-reachability.test.mjs
 ```
 
-Expected: the host-failure and Session-refusal assertions should already pass if Task 1's minimal disposition handling is correct; the exercise is still required because it locks the intended semantics against later refactors. If any fail, do not weaken the assertions.
+Expected: PASS if Task 1 implemented the explicit disposition predicate correctly. Retain the tests even if they are green immediately; they are the regression proof for the three distinct historical semantics.
 
-- [ ] **Step 3: Tighten implementation only if tests expose a mismatch**
+- [ ] **Step 3: Add one anti-collapse assertion**
 
-The intended disposition rule must remain exactly:
+```js
+test("failure and Session refusal do not collapse into the same world cut", () => {
+  const failed = deriveWorldCut({
+    root,
+    causalRecords: [terminalRecord("host-failed", "request:same-cause")],
+    observations: [],
+  });
+  const refused = deriveWorldCut({
+    root,
+    causalRecords: [terminalRecord("session-refused", "request:same-cause")],
+    observations: [],
+  });
 
-```ts
-const spent =
-  record.disposition === "session-refused" ||
-  record.disposition === "host-failed" ||
-  record.disposition === "completed";
+  assert.notDeepEqual(failed, refused);
+});
 ```
 
-Replace a broad `record.disposition !== "unspent"` check with this explicit predicate if needed. Do not let unknown future strings silently become spent history.
+Run the focused test again; expected PASS.
 
-- [ ] **Step 4: Run focused tests again**
-
-Run:
+- [ ] **Step 4: Commit**
 
 ```bash
-npm run build:kernel
-node --test tests/lawful-reachability.test.mjs
-```
-
-Expected: PASS.
-
-- [ ] **Step 5: Commit terminal-history semantics**
-
-```bash
-git add runtime/world-cut.ts tests/lawful-reachability.test.mjs
-git commit -m "test: prove failed and refused attempts advance history"
+git add tests/lawful-reachability.test.mjs runtime/world-cut.ts
+git commit -m "test: preserve terminal reachability history"
 ```
 
 ---
@@ -409,10 +426,10 @@ git commit -m "test: prove failed and refused attempts advance history"
 - Modify: `tests/lawful-reachability.test.mjs`
 
 **Interfaces:**
-- Consumes: Task 1 world-cut contracts and Causal Accounting anomaly vocabulary.
-- Produces: `orphanObservations[]` and `unresolved[]` classifications; anomaly and foreign-root records cannot constitute refs or spent causes under the current root.
+- Consumes: Causal Accounting anomaly vocabulary.
+- Produces: deterministic `orphanObservations[]` and `unresolved[]`; anomaly and foreign-root records never constitute refs or terminal history.
 
-- [ ] **Step 1: Add failing orphan-observation test**
+- [ ] **Step 1: Add orphan-observation test**
 
 ```js
 test("observed ref with no causal ancestry remains an orphan observation", () => {
@@ -428,14 +445,11 @@ test("observed ref with no causal ancestry remains an orphan observation", () =>
       classification: "ORPHAN_OBSERVATION",
     },
   ]);
-  assert.equal(
-    world.constitutedRefs.includes("session-output:mystery-9999"),
-    false,
-  );
+  assert.equal(world.constitutedRefs.includes("session-output:mystery-9999"), false);
 });
 ```
 
-- [ ] **Step 2: Add failing anomaly and broken-lineage tests**
+- [ ] **Step 2: Add anomaly and broken-lineage tests**
 
 ```js
 for (const anomalyCode of [
@@ -444,7 +458,7 @@ for (const anomalyCode of [
   "SUBSTITUTED_CONSEQUENCE",
   "BROKEN_LINEAGE",
 ]) {
-  test(`${anomalyCode} remains unresolved and cannot constitute state`, () => {
+  test(`${anomalyCode} cannot constitute state`, () => {
     const anomalous = completedRecord({
       balance: "anomaly",
       anomalyCode,
@@ -460,7 +474,7 @@ for (const anomalyCode of [
     });
 
     assert.equal(world.constitutedRefs.includes(`session-output:${anomalyCode}`), false);
-    assert.deepEqual(world.spentCauses, []);
+    assert.deepEqual(world.terminalHistory, []);
     assert.deepEqual(world.unresolved, [
       {
         classification: "UNRESOLVED",
@@ -471,7 +485,7 @@ for (const anomalyCode of [
   });
 }
 
-test("balanced record from another authority cut cannot bridge into this world", () => {
+test("balanced record from another authority cut cannot bridge worlds", () => {
   const foreign = completedRecord({
     cause: Object.freeze({
       ...completedRecord().cause,
@@ -489,8 +503,8 @@ test("balanced record from another authority cut cannot bridge into this world",
     observations: ["session-output:foreign-cut"],
   });
 
+  assert.deepEqual(world.terminalHistory, []);
   assert.equal(world.constitutedRefs.includes("session-output:foreign-cut"), false);
-  assert.deepEqual(world.spentCauses, []);
   assert.deepEqual(world.unresolved, [
     {
       classification: "UNRESOLVED",
@@ -501,56 +515,48 @@ test("balanced record from another authority cut cannot bridge into this world",
 });
 ```
 
-- [ ] **Step 3: Run focused tests and verify RED**
-
-Run:
+- [ ] **Step 3: Run and verify RED**
 
 ```bash
 npm run build:kernel
 node --test tests/lawful-reachability.test.mjs
 ```
 
-Expected: FAIL because Task 1 returns empty `orphanObservations` / `unresolved`.
+Expected: FAIL because orphan/unresolved classification is not implemented yet.
 
-- [ ] **Step 4: Implement explicit non-constituting classification**
+- [ ] **Step 4: Implement explicit non-constituting classifications**
 
-In `deriveWorldCut(...)`, maintain `unresolved` entries before skipping records:
+Inside `deriveWorldCut(...)`, create `unresolved: ReachabilityIssue[] = []` and evaluate lineage/anomaly before balanced transition handling:
 
 ```ts
-const unresolved: ReachabilityIssue[] = [];
+const lineageMatches =
+  record.cause.trustId === input.root.trustId &&
+  record.cause.authorityCut === input.root.authorityCut;
 
-for (const record of input.causalRecords) {
-  const lineageMatches =
-    record.cause.trustId === input.root.trustId &&
-    record.cause.authorityCut === input.root.authorityCut;
+if (!lineageMatches) {
+  unresolved.push(
+    Object.freeze({
+      classification: "UNRESOLVED",
+      anomalyCode: "BROKEN_LINEAGE",
+      trustRequestId: record.cause.trustRequestId,
+    }),
+  );
+  continue;
+}
 
-  if (!lineageMatches) {
-    unresolved.push(
-      Object.freeze({
-        classification: "UNRESOLVED",
-        anomalyCode: "BROKEN_LINEAGE",
-        trustRequestId: record.cause.trustRequestId,
-      }),
-    );
-    continue;
-  }
-
-  if (record.balance !== "balanced") {
-    unresolved.push(
-      Object.freeze({
-        classification: "UNRESOLVED",
-        anomalyCode: record.anomalyCode,
-        trustRequestId: record.cause.trustRequestId,
-      }),
-    );
-    continue;
-  }
-
-  // existing balanced disposition handling
+if (record.balance !== "balanced") {
+  unresolved.push(
+    Object.freeze({
+      classification: "UNRESOLVED",
+      anomalyCode: record.anomalyCode,
+      trustRequestId: record.cause.trustRequestId,
+    }),
+  );
+  continue;
 }
 ```
 
-After closure, classify observations only against constituted refs:
+After closure:
 
 ```ts
 const orphanObservations = uniqueSorted(input.observations)
@@ -561,11 +567,16 @@ const orphanObservations = uniqueSorted(input.observations)
       classification: "ORPHAN_OBSERVATION" as const,
     }),
   );
+
+unresolved.sort((a, b) =>
+  (a.trustRequestId ?? "").localeCompare(b.trustRequestId ?? "") ||
+  (a.anomalyCode ?? "").localeCompare(b.anomalyCode ?? ""),
+);
 ```
 
-Sort `unresolved` deterministically by `trustRequestId`, then `anomalyCode`, without hashing or serialization.
+Return frozen copies of both arrays.
 
-- [ ] **Step 5: Run focused tests and verify GREEN**
+- [ ] **Step 5: Run and verify GREEN**
 
 ```bash
 npm run build:kernel
@@ -574,26 +585,30 @@ node --test tests/lawful-reachability.test.mjs
 
 Expected: PASS.
 
-- [ ] **Step 6: Commit closure refusal and orphan classification**
+- [ ] **Step 6: Commit**
 
 ```bash
 git add runtime/world-cut.ts tests/lawful-reachability.test.mjs
-git commit -m "feat: preserve orphan and unresolved world observations"
+git commit -m "feat: preserve orphan and unresolved world state"
 ```
 
 ---
 
-### Task 4: Prove deterministic re-entry, order independence, immutability, and non-authority
+### Task 4: Prove deterministic re-entry, immutability, non-authority, and integrate the gate
 
 **Files:**
 - Modify: `tests/lawful-reachability.test.mjs`
-- Modify: `runtime/world-cut.ts` only if the tests expose ordering or mutation defects
+- Modify: `runtime/world-cut.ts` only if ordering/freezing tests expose a defect
+- Modify: `package.json`
+- Modify: `README.md`
+- Modify: `docs/architecture.md`
+- Modify: `docs/corpus-trust-runtime-v0.1.md` only if it remains the execution-boundary record after #17 lands
 
 **Interfaces:**
-- Consumes: completed `deriveWorldCut(...)` projection.
-- Produces: executable evidence that the same admitted inputs re-derive the same structural world, input ordering does not change the projection, source evidence is not mutated, and the returned object exposes no authority/execution methods.
+- Consumes: completed `deriveWorldCut(...)`.
+- Produces: deterministic structural re-entry proof, input-order independence, immutable returned projection, no authority methods, `npm run test:reachability`, and inclusion in `npm run check`.
 
-- [ ] **Step 1: Add deterministic re-entry and order-independence tests**
+- [ ] **Step 1: Add re-entry and order-independence tests**
 
 ```js
 test("same admitted evidence deterministically re-derives the same world cut", () => {
@@ -613,7 +628,7 @@ test("same admitted evidence deterministically re-derives the same world cut", (
   assert.notEqual(second, first);
 });
 
-test("causal-record and observation insertion order do not change the derived projection", () => {
+test("input insertion order does not change the world projection", () => {
   const records = [
     completedRecord(),
     terminalRecord("host-failed", "request:order-failed"),
@@ -635,10 +650,10 @@ test("causal-record and observation insertion order do not change the derived pr
 });
 ```
 
-- [ ] **Step 2: Add immutability test**
+- [ ] **Step 2: Add immutability and non-authority tests**
 
 ```js
-test("derivation mutates no supplied root, causal record, or observations", () => {
+test("derivation mutates no supplied evidence", () => {
   const mutableRoot = {
     trustId: root.trustId,
     authorityCut: root.authorityCut,
@@ -654,17 +669,10 @@ test("derivation mutates no supplied root, causal record, or observations", () =
     observations,
   });
 
-  assert.deepEqual(
-    { mutableRoot, mutableRecord, observations },
-    before,
-  );
+  assert.deepEqual({ mutableRoot, mutableRecord, observations }, before);
 });
-```
 
-- [ ] **Step 3: Add non-authority surface test**
-
-```js
-test("WorldCut exposes projection data only and no execution or authority API", () => {
+test("WorldCut is frozen projection data with no authority/execution surface", () => {
   const world = deriveWorldCut({ root, causalRecords: [], observations: [] });
 
   for (const forbidden of [
@@ -682,100 +690,46 @@ test("WorldCut exposes projection data only and no execution or authority API", 
 
   assert.equal(Object.isFrozen(world), true);
   assert.equal(Object.isFrozen(world.constitutedRefs), true);
-  assert.equal(Object.isFrozen(world.spentCauses), true);
+  assert.equal(Object.isFrozen(world.terminalHistory), true);
   assert.equal(Object.isFrozen(world.unresolved), true);
   assert.equal(Object.isFrozen(world.orphanObservations), true);
 });
 ```
 
-- [ ] **Step 4: Run focused tests and verify RED/GREEN honestly**
+- [ ] **Step 3: Run focused tests**
 
 ```bash
 npm run build:kernel
 node --test tests/lawful-reachability.test.mjs
 ```
 
-Expected: any order-dependence or shallow-freeze defect should fail. If all pass from prior implementation, retain these as regression proof; do not add production complexity merely to force a red test.
+Expected: PASS. If order independence fails, sort `terminalHistory` by `cause.trustRequestId`, `unresolved` by request/anomaly, and all ref arrays lexically. Do not add a hash or serializer.
 
-- [ ] **Step 5: If needed, make ordering and freezing explicit**
+- [ ] **Step 4: Add the dedicated npm command**
 
-Use stable sort keys for `spentCauses` and `unresolved`:
-
-```ts
-spentCauses.sort((a, b) => a.trustRequestId.localeCompare(b.trustRequestId));
-
-unresolved.sort((a, b) =>
-  (a.trustRequestId ?? "").localeCompare(b.trustRequestId ?? "") ||
-  (a.anomalyCode ?? "").localeCompare(b.anomalyCode ?? ""),
-);
-```
-
-Freeze copied nested cause records and every returned array. Do not freeze caller-owned inputs.
-
-- [ ] **Step 6: Run focused tests again**
-
-```bash
-npm run build:kernel
-node --test tests/lawful-reachability.test.mjs
-```
-
-Expected: PASS.
-
-- [ ] **Step 7: Commit re-entry proof**
-
-```bash
-git add runtime/world-cut.ts tests/lawful-reachability.test.mjs
-git commit -m "test: prove deterministic constituted-world re-entry"
-```
-
----
-
-### Task 5: Integrate the proof into Corpus checks and document the bounded claim
-
-**Files:**
-- Modify: `package.json`
-- Modify: `README.md`
-- Modify: `docs/architecture.md`
-- Modify: `docs/corpus-trust-runtime-v0.1.md` only if that document remains the project's execution-authority boundary record after #17 lands
-- Test: `tests/lawful-reachability.test.mjs`
-
-**Interfaces:**
-- Consumes: complete Lawful Reachability proof from Tasks 1–4.
-- Produces: repeatable project command `npm run test:reachability`, inclusion in `npm run check`, and documentation that distinguishes observed substrate from constituted state without making legal or cryptographic claims.
-
-- [ ] **Step 1: Add the dedicated test command and check-gate entry**
-
-In `package.json`, add:
+In `package.json` add:
 
 ```json
 "test:reachability": "npm run build:kernel && node --test tests/lawful-reachability.test.mjs"
 ```
 
-Add `npm run test:reachability` to the existing `check` chain after the Causal Accounting test command introduced by #17 and before the final build/lint stages. Preserve the repository's existing command ordering otherwise.
+Insert `npm run test:reachability` into the existing `check` chain after the Causal Accounting test command introduced by #17 and before final build/lint stages. Preserve other command order.
 
-- [ ] **Step 2: Run the dedicated command**
+- [ ] **Step 5: Document the bounded claim**
 
-```bash
-npm run test:reachability
-```
-
-Expected: PASS.
-
-- [ ] **Step 3: Document the architecture without widening the claim**
-
-Add a short section to `docs/architecture.md`:
+Add to `docs/architecture.md`:
 
 ```markdown
 ## Lawful Reachability / Constituted Reality v0.1
 
 Corpus distinguishes observed substrate from constituted state.
 
-A pure `deriveWorldCut(...)` projection starts from the adopted declaration root and traverses only balanced Causal Accounting records under the exact adopted authority cut. Successful completed consequences may add output refs to constituted state. Session refusal after warrant spend and host failure advance accountable spent-authority history without manufacturing successful outputs. Observed refs with no accountable ancestry remain explicit `ORPHAN_OBSERVATION` entries.
+A pure `deriveWorldCut(...)` projection starts from the adopted declaration root and traverses only balanced Causal Accounting records under the exact adopted authority cut. Completed consequences may add output refs to constituted state. Session refusal after warrant spend and host failure remain distinguishable terminal history without manufacturing successful outputs. Observed refs with no accountable ancestry remain explicit `ORPHAN_OBSERVATION` entries.
 
 The projection grants no authority, reaches no host, repairs nothing, and carries `legalValidity: "unclaimed"`. It has no canonical world hash or portable identity claim.
 ```
 
-Add the two bounded laws to `README.md` near the existing warranted-execution / causal-accounting progression:
+Add near the README's authority progression:
 
 ```markdown
 > Existence is observed. Reality is constituted. History is the lawful path between them.
@@ -783,53 +737,36 @@ Add the two bounded laws to `README.md` near the existing warranted-execution / 
 > A state belongs to the constituted present only when Corpus can derive a balanced causal path to it from the adopted root; unsupported observations remain visible without silently becoming history.
 ```
 
-- [ ] **Step 4: Run the entire repository gate**
+- [ ] **Step 6: Run the dedicated and full gates**
 
 ```bash
+npm run test:reachability
 npm run check
+git diff --check
 ```
 
-Expected: PASS with the new reachability test included.
+Expected: all PASS; `git diff --check` produces no output.
 
-- [ ] **Step 5: Inspect the final diff for forbidden scope**
-
-Run:
+- [ ] **Step 7: Inspect for forbidden scope**
 
 ```bash
-git diff --check
 git diff --stat main...HEAD
 git diff main...HEAD -- runtime/world-cut.ts tests/lawful-reachability.test.mjs package.json README.md docs/architecture.md docs/corpus-trust-runtime-v0.1.md
 ```
 
-Verify manually that the diff contains none of these:
+Confirm the diff contains no host/Session execution from `world-cut.ts`, canonical world hash, signing/PKI, portable warrants, database/persistence, second event store, counterfactual executor, prospective scheduler, automatic repair/deletion, or legal-validity adjudication.
 
-```text
-canonical world hash
-signature / PKI
-portable warrant
-new database / persistence
-new event store
-counterfactual executor
-prospective scheduler
-automatic repair / deletion
-legal-validity adjudication
-host/session execution from world-cut.ts
-```
-
-- [ ] **Step 6: Commit integration/docs**
+- [ ] **Step 8: Commit integration/docs**
 
 ```bash
-git add package.json README.md docs/architecture.md docs/corpus-trust-runtime-v0.1.md
+git add runtime/world-cut.ts tests/lawful-reachability.test.mjs package.json README.md docs/architecture.md
+git add docs/corpus-trust-runtime-v0.1.md 2>/dev/null || true
 git commit -m "docs: record constituted reality proof boundary"
 ```
-
-If `docs/corpus-trust-runtime-v0.1.md` does not need modification after inspection, omit it from `git add` rather than making a cosmetic change.
 
 ---
 
 ## Final verification gate
-
-After all tasks:
 
 - [ ] Run:
 
@@ -839,14 +776,8 @@ git diff --check
 git status --short
 ```
 
-Expected:
+Expected: `npm run check` passes, `git diff --check` is silent, and `git status --short` is empty after commits.
 
-```text
-npm run check: PASS
-git diff --check: no output
-git status --short: only intentional uncommitted state, preferably empty
-```
-
-- [ ] Re-read `docs/superpowers/specs/2026-08-15-lawful-reachability-design.md` and verify every v0.1 acceptance item has an executable test or explicit documentation boundary.
+- [ ] Re-read `docs/superpowers/specs/2026-08-15-lawful-reachability-design.md` and verify every v0.1 acceptance item has an executable test or explicit bounded documentation statement.
 - [ ] Confirm `runtime/world-cut.ts` imports no host adapter, `CorpusSession`, `WarrantedCorpusSession`, warrant-consumption function, filesystem/database module, cryptographic signer, or canonical serializer.
-- [ ] Confirm the final PR description says this proof establishes deterministic constituted-world derivation from supplied accountable evidence, not authenticity of arbitrary persisted history or prevention of external mutation.
+- [ ] Confirm the final PR claims only deterministic constituted-world derivation from supplied accountable evidence—not authenticity of arbitrary persisted history and not prevention of external mutation.
