@@ -11,6 +11,7 @@ import {
 } from "./adopted-declaration.js";
 
 const issuedWarrants = new WeakSet<object>();
+const consumedWarrants = new WeakSet<object>();
 
 export interface ActionWarrant {
   readonly kind: "corpus-action-warrant-v0.1";
@@ -43,6 +44,18 @@ export interface ActionWarrantAdmission {
   trustReceipt?: TrustOperationReceipt;
   warrant?: Readonly<ActionWarrant>;
 }
+
+export type ActionWarrantConsumption =
+  | {
+      status: "consumed";
+      warrant: Readonly<ActionWarrant>;
+    }
+  | {
+      status: "invalid";
+    }
+  | {
+      status: "already-consumed";
+    };
 
 export function admitActionWarrant(
   adoptedDeclaration: unknown,
@@ -139,4 +152,24 @@ export function isIssuedActionWarrant(
   value: unknown,
 ): value is Readonly<ActionWarrant> {
   return typeof value === "object" && value !== null && issuedWarrants.has(value);
+}
+
+export function consumeIssuedActionWarrant(
+  value: unknown,
+): ActionWarrantConsumption {
+  if (!isIssuedActionWarrant(value)) {
+    return { status: "invalid" };
+  }
+
+  if (consumedWarrants.has(value)) {
+    return { status: "already-consumed" };
+  }
+
+  // Consumption is synchronous and occurs before Session capability admission
+  // or any host await. A refused or failed attempt must never restore authority.
+  consumedWarrants.add(value);
+  return {
+    status: "consumed",
+    warrant: value,
+  };
 }
