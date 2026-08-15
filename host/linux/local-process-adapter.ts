@@ -9,6 +9,7 @@ import type {
 
 const FIXED_ADAPTERS = new Map<string, string>([
   ["synthetic.echo:echo", "fixtures/host/synthetic-echo.mjs"],
+  ["synthetic.fail:fail", "fixtures/host/synthetic-fail.mjs"],
 ]);
 
 function failedStart(): HostExecutionResult {
