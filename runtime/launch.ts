@@ -1,9 +1,18 @@
-import type { CorpusHostPort, HostFailureCode, HostObservation } from "../host/linux/host-port.js";
+import type {
+  CorpusHostPort,
+  HostFailureCode,
+  HostObservation,
+} from "../host/linux/host-port.js";
+import {
+  consumeIssuedActionWarrant,
+  type ActionWarrant,
+} from "./action-warrant.js";
 import type { CapabilityDescriptor } from "./capability-registry.js";
 import { capabilityFixtureEvidenceRef } from "./capability-registry.js";
 
 export type RefusalCode =
   | "CAPABILITY_NOT_FOUND"
+  | "CAPABILITY_OWNER_MISMATCH"
   | "CAPABILITY_NON_AUTHORITY"
   | "CAPABILITY_OPERATION_NOT_ALLOWED";
 
@@ -20,6 +29,23 @@ export interface LaunchReceipt {
   refusalCode?: RefusalCode;
   failureCode?: HostFailureCode;
 }
+
+export type SessionWarrantCode =
+  | "SESSION_WARRANT_ACCEPTED"
+  | "SESSION_WARRANT_INVALID"
+  | "SESSION_WARRANT_ALREADY_CONSUMED";
+
+export type WarrantedLaunchResult =
+  | {
+      accepted: false;
+      code: "SESSION_WARRANT_INVALID" | "SESSION_WARRANT_ALREADY_CONSUMED";
+    }
+  | {
+      accepted: true;
+      code: "SESSION_WARRANT_ACCEPTED";
+      receipt: LaunchReceipt;
+      output?: string;
+    };
 
 function refusal(
   requestId: string,
@@ -42,69 +68,135 @@ function refusal(
   };
 }
 
-export async function launchCapability(
+export interface CapabilityAdmission {
+  capability?: Readonly<CapabilityDescriptor>;
+  refusal?: LaunchReceipt;
+}
+
+export function evaluateCapabilityAdmission(
   registry: ReadonlyMap<string, Readonly<CapabilityDescriptor>>,
-  hostPort: CorpusHostPort,
   requestId: string,
-  capabilityId: string,
-  operation: string,
-  input: string,
-): Promise<{ receipt: LaunchReceipt; output?: string }> {
-  const capability = registry.get(capabilityId);
+  warrant: Readonly<ActionWarrant>,
+): CapabilityAdmission {
+  const capability = registry.get(warrant.capabilityId);
   if (!capability) {
-    return { receipt: refusal(requestId, capabilityId, null, operation, "CAPABILITY_NOT_FOUND") };
+    return {
+      refusal: refusal(
+        requestId,
+        warrant.capabilityId,
+        null,
+        warrant.capabilityOperation,
+        "CAPABILITY_NOT_FOUND",
+      ),
+    };
   }
 
-  if (capability.nonAuthority.includes(operation)) {
+  if (capability.owner !== warrant.capabilityOwner) {
     return {
-      receipt: refusal(
+      refusal: refusal(
         requestId,
         capability.id,
         capability.owner,
-        operation,
+        warrant.capabilityOperation,
+        "CAPABILITY_OWNER_MISMATCH",
+      ),
+    };
+  }
+
+  if (capability.nonAuthority.includes(warrant.capabilityOperation)) {
+    return {
+      refusal: refusal(
+        requestId,
+        capability.id,
+        capability.owner,
+        warrant.capabilityOperation,
         "CAPABILITY_NON_AUTHORITY",
       ),
     };
   }
 
-  if (!capability.allows.includes(operation)) {
+  if (!capability.allows.includes(warrant.capabilityOperation)) {
     return {
-      receipt: refusal(
+      refusal: refusal(
         requestId,
         capability.id,
         capability.owner,
-        operation,
+        warrant.capabilityOperation,
         "CAPABILITY_OPERATION_NOT_ALLOWED",
       ),
     };
   }
 
-  if (operation !== "echo") {
+  if (warrant.capabilityOperation !== "echo") {
     return {
-      receipt: refusal(
+      refusal: refusal(
         requestId,
         capability.id,
         capability.owner,
-        operation,
+        warrant.capabilityOperation,
         "CAPABILITY_OPERATION_NOT_ALLOWED",
       ),
     };
+  }
+
+  return { capability };
+}
+
+export async function launchCapability(
+  registry: ReadonlyMap<string, Readonly<CapabilityDescriptor>>,
+  hostPort: CorpusHostPort,
+  nextRequestId: () => string,
+  warrant: unknown,
+): Promise<WarrantedLaunchResult> {
+  const consumption = consumeIssuedActionWarrant(warrant);
+  if (consumption.status === "invalid") {
+    return {
+      accepted: false,
+      code: "SESSION_WARRANT_INVALID",
+    };
+  }
+  if (consumption.status === "already-consumed") {
+    return {
+      accepted: false,
+      code: "SESSION_WARRANT_ALREADY_CONSUMED",
+    };
+  }
+
+  const requestId = nextRequestId();
+  const admitted = evaluateCapabilityAdmission(
+    registry,
+    requestId,
+    consumption.warrant,
+  );
+  if (admitted.refusal) {
+    return {
+      accepted: true,
+      code: "SESSION_WARRANT_ACCEPTED",
+      receipt: admitted.refusal,
+    };
+  }
+
+  const capability = admitted.capability;
+  if (!capability) {
+    throw new Error("Capability admission produced neither capability nor refusal.");
   }
 
   const hostResult = await hostPort.execute({
     requestId,
     capabilityId: capability.id,
-    operation,
-    input,
+    operation: consumption.warrant.capabilityOperation,
+    input: consumption.warrant.operationInput,
   });
 
   if (hostResult.status === "failed") {
     return {
+      accepted: true,
+      code: "SESSION_WARRANT_ACCEPTED",
       receipt: {
         requestId,
         capabilityId: capability.id,
         owner: capability.owner,
-        operation,
+        operation: consumption.warrant.capabilityOperation,
         admitted: true,
         status: "failed",
         failureCode: hostResult.failureCode,
@@ -116,12 +208,14 @@ export async function launchCapability(
   }
 
   return {
+    accepted: true,
+    code: "SESSION_WARRANT_ACCEPTED",
     output: hostResult.output,
     receipt: {
       requestId,
       capabilityId: capability.id,
       owner: capability.owner,
-      operation,
+      operation: consumption.warrant.capabilityOperation,
       admitted: true,
       status: "completed",
       outputRefs: [`session-output:${requestId}`],

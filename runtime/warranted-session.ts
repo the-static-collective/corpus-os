@@ -1,19 +1,16 @@
-import type {
-  CorpusTrustDeclaration,
-  TrustOperationRequest,
-} from "../lib/trust-runtime.js";
+import type { TrustOperationRequest } from "../lib/trust-runtime.js";
 import {
   admitActionWarrant,
   isIssuedActionWarrant,
   type ActionWarrantAdmission,
 } from "./action-warrant.js";
+import { isAdoptedDeclaration } from "./adopted-declaration.js";
 import { CorpusSession } from "./session.js";
-
-const consumedWarrants = new WeakSet<object>();
 
 export type WarrantExecutionCode =
   | "ACTION_WARRANT_EXECUTED"
   | "ACTION_WARRANT_INVALID"
+  | "ACTION_WARRANT_DECLARATION_NOT_ADOPTED"
   | "ACTION_WARRANT_AUTHORITY_CUT_MISMATCH"
   | "ACTION_WARRANT_ALREADY_CONSUMED"
   | "ACTION_WARRANT_SESSION_CAPABILITY_NOT_FOUND"
@@ -33,7 +30,7 @@ export interface WarrantedActionResult {
 
 export class WarrantedCorpusSession {
   constructor(
-    private readonly declaration: CorpusTrustDeclaration,
+    private readonly adoptedDeclaration: unknown,
     private readonly session: CorpusSession,
   ) {}
 
@@ -41,10 +38,17 @@ export class WarrantedCorpusSession {
     request: TrustOperationRequest,
     operationInput: string,
   ): ActionWarrantAdmission {
-    return admitActionWarrant(this.declaration, request, operationInput);
+    return admitActionWarrant(this.adoptedDeclaration, request, operationInput);
   }
 
   async execute(warrant: unknown): Promise<WarrantExecutionResult> {
+    if (!isAdoptedDeclaration(this.adoptedDeclaration)) {
+      return {
+        executed: false,
+        code: "ACTION_WARRANT_DECLARATION_NOT_ADOPTED",
+      };
+    }
+
     if (!isIssuedActionWarrant(warrant)) {
       return {
         executed: false,
@@ -53,8 +57,8 @@ export class WarrantedCorpusSession {
     }
 
     if (
-      warrant.trustId !== this.declaration.id ||
-      warrant.authorityCut !== this.declaration.version
+      warrant.trustId !== this.adoptedDeclaration.trustId ||
+      warrant.authorityCut !== this.adoptedDeclaration.authorityCut
     ) {
       return {
         executed: false,
@@ -62,41 +66,33 @@ export class WarrantedCorpusSession {
       };
     }
 
-    if (consumedWarrants.has(warrant)) {
+    const launch = await this.session.run(warrant);
+    if (!launch.accepted) {
       return {
         executed: false,
-        code: "ACTION_WARRANT_ALREADY_CONSUMED",
+        code:
+          launch.code === "SESSION_WARRANT_ALREADY_CONSUMED"
+            ? "ACTION_WARRANT_ALREADY_CONSUMED"
+            : "ACTION_WARRANT_INVALID",
+        launch,
       };
     }
-
-    const sessionCapability = this.session
-      .capabilities()
-      .find((capability) => capability.id === warrant.capabilityId);
-    if (!sessionCapability) {
-      return {
-        executed: false,
-        code: "ACTION_WARRANT_SESSION_CAPABILITY_NOT_FOUND",
-      };
-    }
-
-    if (sessionCapability.owner !== warrant.capabilityOwner) {
-      return {
-        executed: false,
-        code: "ACTION_WARRANT_CAPABILITY_OWNER_MISMATCH",
-      };
-    }
-
-    // A warrant becomes spent at the point it crosses into Session admission.
-    // Session refusal or host failure must not make the same authority replayable.
-    consumedWarrants.add(warrant);
-
-    const launch = await this.session.run(
-      warrant.capabilityId,
-      warrant.capabilityOperation,
-      warrant.operationInput,
-    );
 
     if (!launch.receipt.admitted) {
+      if (launch.receipt.refusalCode === "CAPABILITY_NOT_FOUND") {
+        return {
+          executed: false,
+          code: "ACTION_WARRANT_SESSION_CAPABILITY_NOT_FOUND",
+          launch,
+        };
+      }
+      if (launch.receipt.refusalCode === "CAPABILITY_OWNER_MISMATCH") {
+        return {
+          executed: false,
+          code: "ACTION_WARRANT_CAPABILITY_OWNER_MISMATCH",
+          launch,
+        };
+      }
       return {
         executed: false,
         code: "ACTION_WARRANT_SESSION_REFUSED",
