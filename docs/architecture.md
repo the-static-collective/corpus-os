@@ -45,7 +45,7 @@ Matching representation is not authority. Spread copies, JSON round-trips, and `
 
 The host-reaching Session path accepts only a genuine issued warrant. The warrant is consumed synchronously before Session capability admission or any host await. Therefore Session refusal, host failure, and successful completion all leave the same authority spent; replay cannot produce another Session receipt or host consequence.
 
-Every terminal launch receipt also carries `causalBinding`, a read-only evidence shape copied from the already-consumed genuine warrant: trust id, authority cut, corpus subject, capability id/operation/owner, Trust request id, and exact operation input. This binding is inspectable evidence only. It is not registered as authority and cannot be executed.
+Every terminal receipt produced by the warrant-consuming Session path also carries `causalBinding`, a read-only evidence shape copied from the already-consumed genuine warrant: trust id, authority cut, corpus subject, capability id/operation/owner, Trust request id, and exact operation input. This binding is inspectable evidence only. It is not registered as authority and cannot be executed. The lower-level pure admission evaluator may still construct hypothetical refusal evidence for policy testing; that does not become causal history unless it reconciles to a genuine spent warrant.
 
 Lower-level capability policy remains independently testable through a pure admission evaluator. It may inspect hypothetical capability/operation/owner combinations but cannot invoke the host. The raw `CorpusSession.run(capabilityId, operation, input)` consequence shape no longer exists.
 
