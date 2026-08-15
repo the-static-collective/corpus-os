@@ -1,12 +1,10 @@
-import type {
-  CorpusTrustDeclaration,
-  TrustOperationRequest,
-} from "../lib/trust-runtime.js";
+import type { TrustOperationRequest } from "../lib/trust-runtime.js";
 import {
   admitActionWarrant,
   isIssuedActionWarrant,
   type ActionWarrantAdmission,
 } from "./action-warrant.js";
+import { isAdoptedDeclaration } from "./adopted-declaration.js";
 import { CorpusSession } from "./session.js";
 
 const consumedWarrants = new WeakSet<object>();
@@ -14,6 +12,7 @@ const consumedWarrants = new WeakSet<object>();
 export type WarrantExecutionCode =
   | "ACTION_WARRANT_EXECUTED"
   | "ACTION_WARRANT_INVALID"
+  | "ACTION_WARRANT_DECLARATION_NOT_ADOPTED"
   | "ACTION_WARRANT_AUTHORITY_CUT_MISMATCH"
   | "ACTION_WARRANT_ALREADY_CONSUMED"
   | "ACTION_WARRANT_SESSION_CAPABILITY_NOT_FOUND"
@@ -33,7 +32,7 @@ export interface WarrantedActionResult {
 
 export class WarrantedCorpusSession {
   constructor(
-    private readonly declaration: CorpusTrustDeclaration,
+    private readonly adoptedDeclaration: unknown,
     private readonly session: CorpusSession,
   ) {}
 
@@ -41,10 +40,17 @@ export class WarrantedCorpusSession {
     request: TrustOperationRequest,
     operationInput: string,
   ): ActionWarrantAdmission {
-    return admitActionWarrant(this.declaration, request, operationInput);
+    return admitActionWarrant(this.adoptedDeclaration, request, operationInput);
   }
 
   async execute(warrant: unknown): Promise<WarrantExecutionResult> {
+    if (!isAdoptedDeclaration(this.adoptedDeclaration)) {
+      return {
+        executed: false,
+        code: "ACTION_WARRANT_DECLARATION_NOT_ADOPTED",
+      };
+    }
+
     if (!isIssuedActionWarrant(warrant)) {
       return {
         executed: false,
@@ -53,8 +59,8 @@ export class WarrantedCorpusSession {
     }
 
     if (
-      warrant.trustId !== this.declaration.id ||
-      warrant.authorityCut !== this.declaration.version
+      warrant.trustId !== this.adoptedDeclaration.trustId ||
+      warrant.authorityCut !== this.adoptedDeclaration.authorityCut
     ) {
       return {
         executed: false,
@@ -86,8 +92,8 @@ export class WarrantedCorpusSession {
       };
     }
 
-    // A warrant becomes spent at the point it crosses into Session admission.
-    // Session refusal or host failure must not make the same authority replayable.
+    // Task #16 moves this spend point into Session itself next. Until then,
+    // preserve the already-proven one-shot behavior at the wrapper boundary.
     consumedWarrants.add(warrant);
 
     const launch = await this.session.run(
