@@ -70,6 +70,12 @@
       "owner": "fixture.transcription-runtime",
       "allows": ["transcribe"],
       "nonAuthority": ["declare-fact", "remove-source", "amend-trust"]
+    },
+    {
+      "id": "synthetic.echo",
+      "owner": "fixture.synthetic-runtime",
+      "allows": ["echo"],
+      "nonAuthority": ["canonicalize", "admit-source", "rewrite-artifact"]
     }
   ],
   "forbiddenOperations": [
