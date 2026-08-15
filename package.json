@@ -17,7 +17,7 @@
     "test:session": "npm run build:kernel && node --test tests/corpus-session.test.mjs tests/corpus-host-linux.test.mjs",
     "test:trust": "npm run build:kernel && node --test tests/trust-runtime.test.mjs",
     "test:adoption": "npm run build:kernel && node --test tests/adopted-declaration.test.mjs",
-    "test:warrant": "npm run build:kernel && node --test tests/warranted-execution.test.mjs",
+    "test:warrant": "npm run build:kernel && node --test tests/adopted-warrant-root.test.mjs tests/warranted-execution.test.mjs",
     "test:browser": "npm run build && npm run build:kernel && node --test tests/intake-browser.test.mjs",
     "verify:corpus": "npm run build:kernel && node .kernel-dist/scripts/verify-corpus.js",
     "corpus:session": "npm run build:kernel && node .kernel-dist/scripts/corpus-session.js",
