@@ -6,7 +6,7 @@
 |---|---|---|
 | Project 0 | normative node/relationship meaning, authority and evidence boundaries, canonical-addressing decision, conformance contract | product UI, corpus-specific motif workflow |
 | TranchNode | reusable append-only storage, accepted-event mechanics, deterministic traversal, portable continuity | Corpus OS views, forced Project 0 compatibility |
-| Corpus OS | corpus ingestion, declared particulars, seven projections, reader branching, bounded authority/execution proof, baseline experiment | universal ontology, a second canonicalizer, authority manufacture |
+| Corpus OS | corpus ingestion, declared particulars, seven projections, reader branching, bounded authority/execution proof, causal reconciliation, baseline experiment | universal ontology, a second canonicalizer, authority manufacture |
 
 ## Evidence / return slice
 
@@ -26,7 +26,7 @@ All seven views are projections over the same `ring_6` snapshot. Selecting a dif
 
 ## Adopted warranted execution v0.1
 
-Corpus now has one deliberately local executable authority chain:
+Corpus has one deliberately local executable authority chain:
 
 ```text
 code-owned exact declaration bytes
@@ -36,7 +36,7 @@ code-owned exact declaration bytes
 → Session warrant consumption
 → Session capability admission / refusal
 → bounded host execution / failure
-→ launch receipt
+→ terminal launch receipt
 ```
 
 The adopted root is the checked-in synthetic Casework declaration at one exact raw-byte SHA-256, trust id, and declaration version. The loader resolves the fixture from module location, hashes the bytes before JSON interpretation, applies the existing structural Trust validation, deep-freezes the declaration, and records the returned handle in a private in-process registry.
@@ -45,9 +45,61 @@ Matching representation is not authority. Spread copies, JSON round-trips, and `
 
 The host-reaching Session path accepts only a genuine issued warrant. The warrant is consumed synchronously before Session capability admission or any host await. Therefore Session refusal, host failure, and successful completion all leave the same authority spent; replay cannot produce another Session receipt or host consequence.
 
+Every terminal launch receipt also carries `causalBinding`, a read-only evidence shape copied from the already-consumed genuine warrant: trust id, authority cut, corpus subject, capability id/operation/owner, Trust request id, and exact operation input. This binding is inspectable evidence only. It is not registered as authority and cannot be executed.
+
 Lower-level capability policy remains independently testable through a pure admission evaluator. It may inspect hypothetical capability/operation/owner combinations but cannot invoke the host. The raw `CorpusSession.run(capabilityId, operation, input)` consequence shape no longer exists.
 
 This proof establishes **which declaration cut is entitled to admit executable actions**. It does not authenticate a caller as a named participant, establish legal validity, create portable authority, or define declaration succession/revocation law.
+
+## Causal accounting / linear authority v0.1
+
+`runtime/causal-accounting.ts` is a pure derived view over genuine issued Action Warrants plus terminal launch receipts. It does not create a second event store, persist history, mint ids, canonicalize JSON, sign evidence, repair anomalies, or produce executable authority.
+
+The governing separation is:
+
+```text
+warrant resource state
+  unspent | spent
+
+is not the same thing as
+
+terminal causal history
+  unspent | session-refused | host-failed | completed
+```
+
+`inspectActionWarrantState(...)` exposes only whether a genuine issued warrant is still available or has been consumed. `reconcileCausalHistory(...)` then combines that resource state with supplied terminal attempt evidence and preserves the actual disposition.
+
+A balanced cut therefore has this form:
+
+```text
+adopted declaration cut
+→ genuine issued warrant
+→ zero attempts while unspent
+     = unspent
+  OR
+→ exactly one spent attempt
+     → Session refusal = session-refused
+     → admitted host failure = host-failed
+     → admitted host completion = completed
+```
+
+Pre-warrant refusal remains outside executable causal history: no Action Warrant is issued, Session is not entered, and no host consequence or Session receipt is created by that request.
+
+The reconciler detects or represents these computational-integrity anomalies without repairing them:
+
+- `ORPHAN_EFFECT` — consequence evidence lacks an attributable genuine spent warrant in the reconciliation cut;
+- `DOUBLE_SPEND` — more than one terminal consequence is attributed to one genuine warrant;
+- `SUBSTITUTED_CONSEQUENCE` — receipt-bound subject/capability/operation/owner/request/input or admitted terminal fields do not match the warrant;
+- `BROKEN_LINEAGE` — receipt causal lineage names a different trust or authority cut;
+- `MISSING_DISPOSITION` — a genuine warrant is already spent but no terminal attempt evidence is present.
+
+A replay refused as `ACTION_WARRANT_ALREADY_CONSUMED` is not itself a second consequence and therefore does not make otherwise complete causal history unbalanced. Deliberately supplied evidence of two terminal receipts for the same warrant does.
+
+The reconciliation result freezes only newly derived entries and arrays. It does not mutate the adopted declaration, warrant objects, launch receipts, or caller-provided ordering.
+
+These anomaly names make no legal-validity, fraud, financial-accounting, or jurisdiction-specific claim. The proof is local to evidence presented to this in-process Corpus consequence boundary; it does not prove that no similar act occurred elsewhere.
+
+Lawful Reachability / Constituted Reality is intentionally downstream in issue #20. #20 may consume balanced causal history and preserved terminal dispositions, but #17 does not derive a `WorldCut` or decide which observed state is constituted state.
 
 ## Exact-span law
 
@@ -94,9 +146,9 @@ The seven canonical views over `ring_6` are unchanged. `ring_6` remains the cano
 1. **Original-source gap.** The three donor bundles do not contain the five original `Pasted text` inputs. Bundled exact excerpts are admitted; their cited upstream paths remain unresolved.
 2. **Canonical JSON gap.** Competing donor serializers exist, but none is adopted by the shared kernel.
 3. **Rejection gap.** Project 0 has a substantive `rejection` node. TranchNode v0.1 has no lossless representation.
-4. **Durability gap.** Reader-created branches and executable adoption/warrant authority are process-local until append-only storage and accepted-event admission are integrated.
+4. **Durability gap.** Reader-created branches, executable adoption/warrant authority, and causal reconciliation are process-local until append-only storage and accepted-event admission are integrated.
 5. **Caller-authentication gap.** The synthetic Trust declaration distinguishes participant ids/capacities/powers, but this proof does not authenticate the external caller as that participant.
 6. **Temporal-authority gap.** Declaration replacement, revocation, and succession are not defined by v0.1.
-7. **Causal-reconciliation gap.** Linear Authority / Causal Accounting is deliberately deferred to Corpus OS issue #17 after this adopted consequence boundary lands.
+7. **Constituted-state gap.** Balanced causal history is now derivable, but Corpus still does not derive which observed state is lawfully reachable / constituted present state; that remains issue #20.
 
 These are queryable or explicitly bounded system states, not prose footnotes to be forgotten.
