@@ -7,8 +7,6 @@ import {
 import { isAdoptedDeclaration } from "./adopted-declaration.js";
 import { CorpusSession } from "./session.js";
 
-const consumedWarrants = new WeakSet<object>();
-
 export type WarrantExecutionCode =
   | "ACTION_WARRANT_EXECUTED"
   | "ACTION_WARRANT_INVALID"
@@ -68,41 +66,33 @@ export class WarrantedCorpusSession {
       };
     }
 
-    if (consumedWarrants.has(warrant)) {
+    const launch = await this.session.run(warrant);
+    if (!launch.accepted) {
       return {
         executed: false,
-        code: "ACTION_WARRANT_ALREADY_CONSUMED",
+        code:
+          launch.code === "SESSION_WARRANT_ALREADY_CONSUMED"
+            ? "ACTION_WARRANT_ALREADY_CONSUMED"
+            : "ACTION_WARRANT_INVALID",
+        launch,
       };
     }
-
-    const sessionCapability = this.session
-      .capabilities()
-      .find((capability) => capability.id === warrant.capabilityId);
-    if (!sessionCapability) {
-      return {
-        executed: false,
-        code: "ACTION_WARRANT_SESSION_CAPABILITY_NOT_FOUND",
-      };
-    }
-
-    if (sessionCapability.owner !== warrant.capabilityOwner) {
-      return {
-        executed: false,
-        code: "ACTION_WARRANT_CAPABILITY_OWNER_MISMATCH",
-      };
-    }
-
-    // Task #16 moves this spend point into Session itself next. Until then,
-    // preserve the already-proven one-shot behavior at the wrapper boundary.
-    consumedWarrants.add(warrant);
-
-    const launch = await this.session.run(
-      warrant.capabilityId,
-      warrant.capabilityOperation,
-      warrant.operationInput,
-    );
 
     if (!launch.receipt.admitted) {
+      if (launch.receipt.refusalCode === "CAPABILITY_NOT_FOUND") {
+        return {
+          executed: false,
+          code: "ACTION_WARRANT_SESSION_CAPABILITY_NOT_FOUND",
+          launch,
+        };
+      }
+      if (launch.receipt.refusalCode === "CAPABILITY_OWNER_MISMATCH") {
+        return {
+          executed: false,
+          code: "ACTION_WARRANT_CAPABILITY_OWNER_MISMATCH",
+          launch,
+        };
+      }
       return {
         executed: false,
         code: "ACTION_WARRANT_SESSION_REFUSED",
