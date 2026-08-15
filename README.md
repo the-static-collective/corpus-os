@@ -37,7 +37,7 @@ The first major product vertical growing from those laws is **Corpus Casework**:
 - `CorpusSession.run(...)` accepts only a genuine issued warrant, not raw capability/operation/input tuples;
 - the warrant is consumed before Session capability admission or host await, so Session refusal, host failure, and completion all leave it spent;
 - a replay cannot produce a second Session receipt or host consequence;
-- every terminal launch receipt carries an inspectable causal binding copied from the already-consumed genuine warrant;
+- every terminal receipt produced by the warrant-consuming Session path carries an inspectable causal binding copied from the already-consumed genuine warrant;
 - lower-level capability policy remains testable through a pure evaluator that cannot invoke the host;
 - every declaration, adoption handle, warrant, and Trust decision in this proof keeps legal validity unclaimed.
 
