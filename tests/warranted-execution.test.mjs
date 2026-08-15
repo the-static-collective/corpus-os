@@ -99,6 +99,28 @@ test("operation input is bound at admission and execution accepts no replacement
   assert.equal(host.calls[0].input, "bound-at-admission");
 });
 
+test("Trust-admitted non-capability actions cannot mint an Action Warrant", async () => {
+  const host = recordingHost();
+  const { runtime, session } = await makeRuntime({ hostPort: host.port });
+  const admission = runtime.admit(
+    request({
+      requestId: "request:inspect-not-warrant",
+      operation: "inspect",
+      targetScope: "corpus",
+      capabilityId: undefined,
+      capabilityOperation: undefined,
+    }),
+    "not executable",
+  );
+
+  assert.equal(admission.trustReceipt.admitted, true);
+  assert.equal(admission.admitted, false);
+  assert.equal(admission.code, "ACTION_WARRANT_OPERATION_REQUIRED");
+  assert.equal(admission.warrant, undefined);
+  assert.equal(host.calls.length, 0);
+  assert.equal(session.recordedReceipts().length, 0);
+});
+
 test("foreign corpus subject is refused before Session or host execution", async () => {
   const host = recordingHost();
   const { runtime, session } = await makeRuntime({ hostPort: host.port });
@@ -213,6 +235,39 @@ test("a warrant is one-shot and replay cannot produce a second host consequence"
   assert.equal(second.executed, false);
   assert.equal(second.code, "ACTION_WARRANT_ALREADY_CONSUMED");
   assert.equal(host.calls.length, 1);
+  assert.equal(session.recordedReceipts().length, 1);
+});
+
+test("Session refusal spends the warrant and cannot be retried under the same authority", async () => {
+  const trustAllowsMoreThanSession = structuredClone(declaration);
+  trustAllowsMoreThanSession.capabilities
+    .find((capability) => capability.id === "synthetic.echo")
+    .allows.push("session-refuses");
+
+  const host = recordingHost();
+  const { runtime, session } = await makeRuntime({
+    trust: trustAllowsMoreThanSession,
+    hostPort: host.port,
+  });
+  const admission = runtime.admit(
+    request({
+      requestId: "request:session-refusal",
+      capabilityOperation: "session-refuses",
+    }),
+    "once even when refused",
+  );
+  assert.equal(admission.admitted, true);
+
+  const first = await runtime.execute(admission.warrant);
+  const second = await runtime.execute(admission.warrant);
+
+  assert.equal(first.executed, false);
+  assert.equal(first.code, "ACTION_WARRANT_SESSION_REFUSED");
+  assert.equal(first.launch.receipt.admitted, false);
+  assert.equal(first.launch.receipt.refusalCode, "CAPABILITY_OPERATION_NOT_ALLOWED");
+  assert.equal(second.executed, false);
+  assert.equal(second.code, "ACTION_WARRANT_ALREADY_CONSUMED");
+  assert.equal(host.calls.length, 0);
   assert.equal(session.recordedReceipts().length, 1);
 });
 
