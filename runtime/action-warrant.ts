@@ -57,6 +57,8 @@ export type ActionWarrantConsumption =
       status: "already-consumed";
     };
 
+export type ActionWarrantState = "invalid" | "unspent" | "spent";
+
 export function admitActionWarrant(
   adoptedDeclaration: unknown,
   request: TrustOperationRequest,
@@ -152,6 +154,11 @@ export function isIssuedActionWarrant(
   value: unknown,
 ): value is Readonly<ActionWarrant> {
   return typeof value === "object" && value !== null && issuedWarrants.has(value);
+}
+
+export function inspectActionWarrantState(value: unknown): ActionWarrantState {
+  if (!isIssuedActionWarrant(value)) return "invalid";
+  return consumedWarrants.has(value) ? "spent" : "unspent";
 }
 
 export function consumeIssuedActionWarrant(

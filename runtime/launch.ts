@@ -16,6 +16,17 @@ export type RefusalCode =
   | "CAPABILITY_NON_AUTHORITY"
   | "CAPABILITY_OPERATION_NOT_ALLOWED";
 
+export interface LaunchCausalBinding {
+  readonly trustId: string;
+  readonly authorityCut: string;
+  readonly subjectRef: string;
+  readonly capabilityId: string;
+  readonly capabilityOperation: string;
+  readonly capabilityOwner: string;
+  readonly trustRequestId: string;
+  readonly operationInput: string;
+}
+
 export interface LaunchReceipt {
   requestId: string;
   capabilityId: string;
@@ -26,6 +37,7 @@ export interface LaunchReceipt {
   outputRefs: string[];
   evidenceRefs: string[];
   hostObservation: HostObservation;
+  causalBinding: LaunchCausalBinding;
   refusalCode?: RefusalCode;
   failureCode?: HostFailureCode;
 }
@@ -47,12 +59,28 @@ export type WarrantedLaunchResult =
       output?: string;
     };
 
+function bindingForWarrant(
+  warrant: Readonly<ActionWarrant>,
+): LaunchCausalBinding {
+  return {
+    trustId: warrant.trustId,
+    authorityCut: warrant.authorityCut,
+    subjectRef: warrant.subjectRef,
+    capabilityId: warrant.capabilityId,
+    capabilityOperation: warrant.capabilityOperation,
+    capabilityOwner: warrant.capabilityOwner,
+    trustRequestId: warrant.trustRequestId,
+    operationInput: warrant.operationInput,
+  };
+}
+
 function refusal(
   requestId: string,
   capabilityId: string,
   owner: string | null,
   operation: string,
   code: RefusalCode,
+  causalBinding: LaunchCausalBinding,
 ): LaunchReceipt {
   return {
     requestId,
@@ -65,6 +93,7 @@ function refusal(
     outputRefs: [],
     evidenceRefs: [capabilityFixtureEvidenceRef],
     hostObservation: { platform: process.platform },
+    causalBinding,
   };
 }
 
@@ -78,6 +107,7 @@ export function evaluateCapabilityAdmission(
   requestId: string,
   warrant: Readonly<ActionWarrant>,
 ): CapabilityAdmission {
+  const causalBinding = bindingForWarrant(warrant);
   const capability = registry.get(warrant.capabilityId);
   if (!capability) {
     return {
@@ -87,6 +117,7 @@ export function evaluateCapabilityAdmission(
         null,
         warrant.capabilityOperation,
         "CAPABILITY_NOT_FOUND",
+        causalBinding,
       ),
     };
   }
@@ -99,6 +130,7 @@ export function evaluateCapabilityAdmission(
         capability.owner,
         warrant.capabilityOperation,
         "CAPABILITY_OWNER_MISMATCH",
+        causalBinding,
       ),
     };
   }
@@ -111,6 +143,7 @@ export function evaluateCapabilityAdmission(
         capability.owner,
         warrant.capabilityOperation,
         "CAPABILITY_NON_AUTHORITY",
+        causalBinding,
       ),
     };
   }
@@ -123,6 +156,7 @@ export function evaluateCapabilityAdmission(
         capability.owner,
         warrant.capabilityOperation,
         "CAPABILITY_OPERATION_NOT_ALLOWED",
+        causalBinding,
       ),
     };
   }
@@ -135,6 +169,7 @@ export function evaluateCapabilityAdmission(
         capability.owner,
         warrant.capabilityOperation,
         "CAPABILITY_OPERATION_NOT_ALLOWED",
+        causalBinding,
       ),
     };
   }
@@ -162,6 +197,7 @@ export async function launchCapability(
     };
   }
 
+  const causalBinding = bindingForWarrant(consumption.warrant);
   const requestId = nextRequestId();
   const admitted = evaluateCapabilityAdmission(
     registry,
@@ -203,6 +239,7 @@ export async function launchCapability(
         outputRefs: [],
         evidenceRefs: [capabilityFixtureEvidenceRef, "corpus-particular:ring_6"],
         hostObservation: hostResult.hostObservation,
+        causalBinding,
       },
     };
   }
@@ -221,6 +258,7 @@ export async function launchCapability(
       outputRefs: [`session-output:${requestId}`],
       evidenceRefs: [capabilityFixtureEvidenceRef, "corpus-particular:ring_6"],
       hostObservation: hostResult.hostObservation,
+      causalBinding,
     },
   };
 }
