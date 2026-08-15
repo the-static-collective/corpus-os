@@ -1,11 +1,14 @@
 import {
   evaluateTrustOperation,
-  type CorpusTrustDeclaration,
   type TrustCapacity,
   type TrustDecisionCode,
   type TrustOperationReceipt,
   type TrustOperationRequest,
 } from "../lib/trust-runtime.js";
+import {
+  declarationForAdoptedHandle,
+  isAdoptedDeclaration,
+} from "./adopted-declaration.js";
 
 const issuedWarrants = new WeakSet<object>();
 
@@ -27,6 +30,7 @@ export interface ActionWarrant {
 
 export type ActionWarrantAdmissionCode =
   | TrustDecisionCode
+  | "ACTION_WARRANT_DECLARATION_NOT_ADOPTED"
   | "ACTION_WARRANT_OPERATION_REQUIRED"
   | "ACTION_WARRANT_TARGET_REQUIRED"
   | "ACTION_WARRANT_TARGET_NOT_IN_CORPUS"
@@ -36,15 +40,30 @@ export type ActionWarrantAdmissionCode =
 export interface ActionWarrantAdmission {
   admitted: boolean;
   code: ActionWarrantAdmissionCode;
-  trustReceipt: TrustOperationReceipt;
+  trustReceipt?: TrustOperationReceipt;
   warrant?: Readonly<ActionWarrant>;
 }
 
 export function admitActionWarrant(
-  declaration: CorpusTrustDeclaration,
+  adoptedDeclaration: unknown,
   request: TrustOperationRequest,
   operationInput: string,
 ): ActionWarrantAdmission {
+  if (!isAdoptedDeclaration(adoptedDeclaration)) {
+    return {
+      admitted: false,
+      code: "ACTION_WARRANT_DECLARATION_NOT_ADOPTED",
+    };
+  }
+
+  const declaration = declarationForAdoptedHandle(adoptedDeclaration);
+  if (!declaration) {
+    return {
+      admitted: false,
+      code: "ACTION_WARRANT_DECLARATION_NOT_ADOPTED",
+    };
+  }
+
   const trustReceipt = evaluateTrustOperation(declaration, request);
   if (!trustReceipt.admitted) {
     return {
