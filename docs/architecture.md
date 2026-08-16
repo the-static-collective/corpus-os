@@ -6,7 +6,7 @@
 |---|---|---|
 | Project 0 | normative node/relationship meaning, authority and evidence boundaries, canonical-addressing decision, conformance contract | product UI, corpus-specific motif workflow |
 | TranchNode | reusable append-only storage, accepted-event mechanics, deterministic traversal, portable continuity | Corpus OS views, forced Project 0 compatibility |
-| Corpus OS | corpus ingestion, declared particulars, seven projections, reader branching, bounded authority/execution proof, causal reconciliation, baseline experiment | universal ontology, a second canonicalizer, authority manufacture |
+| Corpus OS | corpus ingestion, declared particulars, seven projections, reader branching, bounded authority/execution proof, causal reconciliation, lawful-reachability projection, baseline experiment | universal ontology, a second canonicalizer, authority manufacture |
 
 ## Evidence / return slice
 
@@ -99,7 +99,44 @@ The reconciliation result freezes only newly derived entries and arrays. It does
 
 These anomaly names make no legal-validity, fraud, financial-accounting, or jurisdiction-specific claim. The proof is local to evidence presented to this in-process Corpus consequence boundary; it does not prove that no similar act occurred elsewhere.
 
-Lawful Reachability / Constituted Reality is intentionally downstream in issue #20. #20 may consume balanced causal history and preserved terminal dispositions, but #17 does not derive a `WorldCut` or decide which observed state is constituted state.
+## Lawful Reachability / Constituted Reality v0.1
+
+`runtime/world-cut.ts` is a read-only projection downstream of Causal Accounting. Corpus distinguishes observed substrate from constituted state rather than assuming that every observed ref automatically belongs to the present world.
+
+The projection boundary is deliberately narrower than the Causal Accounting object. `reachabilityRecordsFromReconciliation(...)` copies the root/cause fields and terminal disposition needed for reachability, but executable warrant objects, launch receipt objects, capability-owner authority, and operation input do not cross into `deriveWorldCut(...)`.
+
+Conceptually:
+
+```text
+adopted root
+→ balanced causal history under the exact trust + authority cut
+→ deriveWorldCut(...)
+→ constituted refs + preserved terminal history
+  OR explicit unresolved/orphan state
+```
+
+A balanced `completed` record may add only its declared consequence output refs to constituted state. A balanced `host-failed` or `session-refused` record advances terminal history but manufactures no successful output. `unspent` evidence is not a consequential transition.
+
+The `terminalHistory` field is load-bearing: Session refusal after spend, host failure, and completion remain distinguishable rather than collapsing back into one generic `spent` state.
+
+Observations are handled separately from causal closure:
+
+```text
+observed + accountable ancestry = constituted or already-supported observation
+observed - accountable ancestry = ORPHAN_OBSERVATION
+```
+
+`ORPHAN_OBSERVATION` means only that the supplied history does not establish how the ref entered this constituted world. It does not classify the observation as false, hostile, fraudulent, corrupt, or deletable.
+
+Causal Accounting anomalies remain non-constituting. Every available anomaly code, including `MISSING_DISPOSITION`, is preserved as explicit `UNRESOLVED` projection evidence. A record naming another trust or authority cut is classified as broken lineage for this root and cannot bridge worlds.
+
+The projection is deterministic structural data: ref arrays and derived records use stable lexical ordering, returned projection objects/arrays are frozen, and supplied evidence is not mutated. Structural re-derivation from the same admitted inputs is the v0.1 re-entry claim; no canonical world hash or portable world identity is introduced.
+
+The bounded claim is:
+
+> Unauthorized substrate mutation need not automatically redefine constituted state.
+
+The projection grants no authority, issues or consumes no warrants, reaches no Session or host, persists nothing, repairs nothing, schedules nothing, authenticates no arbitrary persisted history, and carries `legalValidity: "unclaimed"`. It makes no legal-validity, distributed-consensus, cryptographic-attestation, or external-world-exclusivity claim.
 
 ## Exact-span law
 
@@ -146,9 +183,9 @@ The seven canonical views over `ring_6` are unchanged. `ring_6` remains the cano
 1. **Original-source gap.** The three donor bundles do not contain the five original `Pasted text` inputs. Bundled exact excerpts are admitted; their cited upstream paths remain unresolved.
 2. **Canonical JSON gap.** Competing donor serializers exist, but none is adopted by the shared kernel.
 3. **Rejection gap.** Project 0 has a substantive `rejection` node. TranchNode v0.1 has no lossless representation.
-4. **Durability gap.** Reader-created branches, executable adoption/warrant authority, and causal reconciliation are process-local until append-only storage and accepted-event admission are integrated.
+4. **Durability gap.** Reader-created branches, executable adoption/warrant authority, causal reconciliation, and constituted-world projection are process-local until append-only storage and accepted-event admission are integrated.
 5. **Caller-authentication gap.** The synthetic Trust declaration distinguishes participant ids/capacities/powers, but this proof does not authenticate the external caller as that participant.
 6. **Temporal-authority gap.** Declaration replacement, revocation, and succession are not defined by v0.1.
-7. **Constituted-state gap.** Balanced causal history is now derivable, but Corpus still does not derive which observed state is lawfully reachable / constituted present state; that remains issue #20.
+7. **Persisted-history authenticity gap.** `WorldCut` derives only from supplied accountable evidence; Corpus does not yet authenticate arbitrary persisted history or prove that an external substrate has not been changed outside this boundary.
 
 These are queryable or explicitly bounded system states, not prose footnotes to be forgotten.
