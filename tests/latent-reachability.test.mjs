@@ -144,11 +144,27 @@ latentTest("spent warrant is not prospectively reachable", () => {
 });
 
 latentTest("authority-cut lineage must match the constituted root", () => {
-  const warrant = issue("request:latent-lineage");
+  const warrant = issue("request:latent-lineage-cut");
   const world = worldFor(warrant, {
     root: Object.freeze({
       trustId: warrant.trustId,
       authorityCut: "foreign-cut",
+    }),
+  });
+
+  assert.equal(
+    latent.inspectLatentReachability(world, registry, warrant).code,
+    "LATENT_BROKEN_LINEAGE",
+  );
+  assert.equal(inspectActionWarrantState(warrant), "unspent");
+});
+
+latentTest("trust lineage must match the constituted root", () => {
+  const warrant = issue("request:latent-lineage-trust");
+  const world = worldFor(warrant, {
+    root: Object.freeze({
+      trustId: "trust:foreign",
+      authorityCut: warrant.authorityCut,
     }),
   });
 
