@@ -19,7 +19,7 @@
     "test:adoption": "npm run build:kernel && node --test tests/adopted-declaration.test.mjs",
     "test:warrant": "npm run build:kernel && node --test tests/adopted-warrant-root.test.mjs tests/warranted-execution.test.mjs",
     "test:causal": "npm run build:kernel && node --test tests/causal-accounting.test.mjs",
-    "test:reachability": "npm run build:kernel && node --test tests/lawful-reachability.test.mjs tests/lawful-reachability-orphan-effects.test.mjs",
+    "test:reachability": "npm run build:kernel && node --test tests/lawful-reachability.test.mjs tests/lawful-reachability-orphan-effects.test.mjs tests/lawful-reachability-boundary.test.mjs",
     "test:browser": "npm run build && npm run build:kernel && node --test tests/intake-browser.test.mjs",
     "verify:corpus": "npm run build:kernel && node .kernel-dist/scripts/verify-corpus.js",
     "corpus:session": "npm run build:kernel && node .kernel-dist/scripts/corpus-session.js",
