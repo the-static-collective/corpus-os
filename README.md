@@ -2,15 +2,16 @@
 
 **An operating environment for bodies of evidence, ideas, authority, action, and return.**
 
-Corpus OS is the first falsifiable downstream proof of the Project 0 / TranchNode architecture. It does not summarize a corpus and call the summary memory. It preserves admitted source bytes, declared particulars, attributed transformations, plural readings, explicit disagreement, bounded execution, refusal, causal accounting, constituted-world derivation, and routes back to evidence.
+Corpus OS is the first falsifiable downstream proof of the Project 0 / TranchNode architecture. It does not summarize a corpus and call the summary memory. It preserves admitted source bytes, declared particulars, attributed transformations, plural readings, explicit disagreement, bounded execution, refusal, causal accounting, constituted-world derivation, prospective attempt eligibility, and routes back to evidence.
 
-The original proof particular is `ring_6`. The system now also composes five executable operating-environment concerns:
+The original proof particular is `ring_6`. The system now also composes six executable operating-environment concerns:
 
 - **Corpus Trust Runtime** — evaluate who is named as acting, in which declared capacity, under which power, against which constituted corpus, with explicit admission or refusal;
 - **Adopted Action Warrant** — bind admitted executable authority to one code-owned declaration cut and exact operation input without making copied representation executable;
 - **Corpus Session** — consume a genuine warrant before capability admission, execute only through the declared capability owner, and return a deterministic refusal/completion/failure receipt;
 - **Causal Accounting** — derive a pure reconciliation view that keeps warrant spend state distinct from terminal history and detects causal anomalies without repairing them;
-- **Lawful Reachability / Constituted Reality** — derive a pure `WorldCut` from one adopted root, balanced causal history, and observations without turning observed substrate into authority or silently admitting orphan state.
+- **Lawful Reachability / Constituted Reality** — derive a pure `WorldCut` from one adopted root, balanced causal history, and observations without turning observed substrate into authority or silently admitting orphan state;
+- **Latent Reachability** — inspect whether one genuine, unspent warrant remains eligible to cross the Session attempt boundary from a constituted `WorldCut` without consuming authority, calling the host, or pretending a possible consequence already exists.
 
 The first major product vertical growing from those laws is **Corpus Casework**:
 
@@ -64,6 +65,18 @@ The first major product vertical growing from those laws is **Corpus Casework**:
 - records from another trust or authority cut remain unresolved as broken lineage and cannot bridge into the current world;
 - derivation is deterministic under insertion-order changes, returns frozen projection data, mutates no supplied evidence, grants no authority, and keeps `legalValidity: "unclaimed"`.
 
+### Latent reachability / prospective attempt eligibility
+
+- `inspectLatentReachability(...)` accepts a constituted `WorldCut`, the current capability registry, and one candidate warrant without mutating any of them;
+- only genuine in-process Action Warrant identity is inspectable as prospective authority; spread/JSON/`structuredClone` copies fail closed as `LATENT_WARRANT_INVALID`;
+- a genuine warrant must remain unspent, match the exact constituted `trustId` + `authorityCut`, target an already constituted subject ref, and pass the same pure capability policy used by Session;
+- spent authority, broken lineage, an unconstituted subject, and each existing capability-policy refusal remain distinguishable prospective blocks;
+- `ATTEMPT_REACHABLE` means only that the current warrant appears eligible to cross the Session attempt boundary; it is not Session admission, execution, host success, output existence, or future state;
+- inspection never consumes a warrant, calls a host, returns operation input, manufactures a receipt, predicts output refs, schedules execution, or mutates `WorldCut`;
+- repeated inspection is deterministic for the same present inputs, returned data is frozen, and `legalValidity` remains `"unclaimed"`.
+
+> **Possible authority is not spent authority, and possible consequence is not constituted reality.**
+
 ### Trust-shaped administration
 
 - a pure deterministic Trust Runtime separates participant identity, acting capacity, granted power, target scope, and delegated capability;
@@ -105,6 +118,12 @@ pure lawful-reachability projection
         ↓
 constituted refs + terminal history + unresolved/orphan observations
         ↓
+non-consuming latent-reachability inspection of one genuine warrant
+        ↓
+ATTEMPT_REACHABLE OR explicit prospective block
+        ↓
+(no spend, no host call, no future state)
+        ↓
 return to evidence/history
 ```
 
@@ -128,6 +147,8 @@ Causal Accounting is also deliberately bounded. It proves reconciliation only fo
 
 Lawful Reachability is likewise a bounded projection over supplied evidence. It provides tamper legibility by refusing to treat unsupported observations as automatically constituted state; it does not prevent external mutation, authenticate arbitrary persisted history, create a canonical world identity, establish distributed consensus, repair anomalies, or make legal-validity claims.
 
+Latent Reachability is narrower still: it answers only whether one already-issued genuine warrant remains prospectively eligible to attempt from one supplied constituted present. It does not enumerate all possible actions, create authority, reserve or spend a warrant, simulate counterfactual worlds, predict host behavior, promise success, create output refs, schedule an attempt, authenticate future evidence, or constitute any future state.
+
 ## Run it
 
 Requires Node 22 or newer.
@@ -149,6 +170,7 @@ npm run test:adoption
 npm run test:warrant
 npm run test:causal
 npm run test:reachability
+npm run test:latent
 npm run corpus:session
 npm run build
 ```
@@ -159,17 +181,18 @@ npm run build
 - `kernel/` — exact-span verification, deterministic queries, branch draft export, and the canonical-addressing port.
 - `runtime/adopted-declaration.ts` — code-owned exact-byte adoption root and private adopted-handle registry.
 - `runtime/action-warrant.ts` — adopted-only warrant issuance, one-shot in-process consumption law, and read-only spend-state inspection.
-- `runtime/session.ts` / `runtime/launch.ts` — warrant-required Session consequence boundary, capability admission, host execution, terminal receipts, and warrant-bound causal evidence.
+- `runtime/session.ts` / `runtime/launch.ts` — warrant-required Session consequence boundary, shared pure capability policy, capability admission, host execution, terminal receipts, and warrant-bound causal evidence.
 - `runtime/causal-accounting.ts` — pure reconciliation of genuine issued warrants to terminal dispositions and explicit causal anomalies.
 - `runtime/world-cut.ts` — non-authoritative adaptation of reconciled causal evidence and pure deterministic constituted-world projection.
+- `runtime/latent-reachability.ts` — non-consuming prospective inspection of one genuine warrant against constituted state and shared Session capability policy.
 - `lib/trust-runtime.ts` — deterministic trust-shaped admission/refusal evaluator.
 - `fixtures/capabilities/` — synthetic capability fixture for Session policy/execution.
 - `fixtures/trusts/` — synthetic constituted-corpus declaration for Casework and local adoption proof.
 - `corpus/manifest.json` — pinned input policy, hashes, admitted artifacts, and declared absences.
 - `corpus/sources/` — exact text artifacts extracted from the pinned donor bundles.
 - `lib/ring6-fixture.ts` — typed `ring_6` proof data.
-- `tests/` — adversarial continuity, intake, Trust, adoption, warrant, Session, causal accounting, lawful reachability, browser, and rendered-output tests.
-- `docs/architecture.md` — application, authority, consequence, causal-accounting, and lawful-reachability boundaries.
+- `tests/` — adversarial continuity, intake, Trust, adoption, warrant, Session, causal accounting, lawful reachability, latent reachability, browser, and rendered-output tests.
+- `docs/architecture.md` — application, authority, consequence, causal-accounting, lawful-reachability, and latent-reachability boundaries.
 - `docs/corpus-trust-runtime-v0.1.md` — Trust Runtime laws, execution composition, Casework vertical, non-goals, and follow-on horizon.
 - `docs/profile-matrix.md` — Project 0 / TranchNode compatibility matrix.
 - `docs/baseline-experiment.md` — reproducible comparison against Git + Markdown + search.
@@ -216,4 +239,6 @@ The differentiator is continuity across:
 
 > Observed substrate does not automatically redefine constituted state; accountable reachability is the bridge.
 
-Confidence is not evidence. Hashing is not truth. Retrieval is not authority. Similarity is not lineage. Execution is not authority. Possession is not truth.
+> Possible authority is not spent authority, and possible consequence is not constituted reality.
+
+Confidence is not evidence. Hashing is not truth. Retrieval is not authority. Similarity is not lineage. Execution is not authority. Possibility is not history. Possession is not truth.

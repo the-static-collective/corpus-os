@@ -97,6 +97,65 @@ function refusal(
   };
 }
 
+export type CapabilityPolicyResult =
+  | {
+      readonly admitted: true;
+      readonly capability: Readonly<CapabilityDescriptor>;
+    }
+  | {
+      readonly admitted: false;
+      readonly code: RefusalCode;
+      readonly capabilityId: string;
+      readonly owner: string | null;
+    };
+
+export function evaluateCapabilityPolicy(
+  registry: ReadonlyMap<string, Readonly<CapabilityDescriptor>>,
+  warrant: Readonly<ActionWarrant>,
+): CapabilityPolicyResult {
+  const capability = registry.get(warrant.capabilityId);
+  if (!capability) {
+    return {
+      admitted: false,
+      code: "CAPABILITY_NOT_FOUND",
+      capabilityId: warrant.capabilityId,
+      owner: null,
+    };
+  }
+
+  if (capability.owner !== warrant.capabilityOwner) {
+    return {
+      admitted: false,
+      code: "CAPABILITY_OWNER_MISMATCH",
+      capabilityId: capability.id,
+      owner: capability.owner,
+    };
+  }
+
+  if (capability.nonAuthority.includes(warrant.capabilityOperation)) {
+    return {
+      admitted: false,
+      code: "CAPABILITY_NON_AUTHORITY",
+      capabilityId: capability.id,
+      owner: capability.owner,
+    };
+  }
+
+  if (
+    !capability.allows.includes(warrant.capabilityOperation) ||
+    warrant.capabilityOperation !== "echo"
+  ) {
+    return {
+      admitted: false,
+      code: "CAPABILITY_OPERATION_NOT_ALLOWED",
+      capabilityId: capability.id,
+      owner: capability.owner,
+    };
+  }
+
+  return { admitted: true, capability };
+}
+
 export interface CapabilityAdmission {
   capability?: Readonly<CapabilityDescriptor>;
   refusal?: LaunchReceipt;
@@ -108,73 +167,22 @@ export function evaluateCapabilityAdmission(
   warrant: Readonly<ActionWarrant>,
 ): CapabilityAdmission {
   const causalBinding = bindingForWarrant(warrant);
-  const capability = registry.get(warrant.capabilityId);
-  if (!capability) {
+  const policy = evaluateCapabilityPolicy(registry, warrant);
+
+  if (!policy.admitted) {
     return {
       refusal: refusal(
         requestId,
-        warrant.capabilityId,
-        null,
+        policy.capabilityId,
+        policy.owner,
         warrant.capabilityOperation,
-        "CAPABILITY_NOT_FOUND",
+        policy.code,
         causalBinding,
       ),
     };
   }
 
-  if (capability.owner !== warrant.capabilityOwner) {
-    return {
-      refusal: refusal(
-        requestId,
-        capability.id,
-        capability.owner,
-        warrant.capabilityOperation,
-        "CAPABILITY_OWNER_MISMATCH",
-        causalBinding,
-      ),
-    };
-  }
-
-  if (capability.nonAuthority.includes(warrant.capabilityOperation)) {
-    return {
-      refusal: refusal(
-        requestId,
-        capability.id,
-        capability.owner,
-        warrant.capabilityOperation,
-        "CAPABILITY_NON_AUTHORITY",
-        causalBinding,
-      ),
-    };
-  }
-
-  if (!capability.allows.includes(warrant.capabilityOperation)) {
-    return {
-      refusal: refusal(
-        requestId,
-        capability.id,
-        capability.owner,
-        warrant.capabilityOperation,
-        "CAPABILITY_OPERATION_NOT_ALLOWED",
-        causalBinding,
-      ),
-    };
-  }
-
-  if (warrant.capabilityOperation !== "echo") {
-    return {
-      refusal: refusal(
-        requestId,
-        capability.id,
-        capability.owner,
-        warrant.capabilityOperation,
-        "CAPABILITY_OPERATION_NOT_ALLOWED",
-        causalBinding,
-      ),
-    };
-  }
-
-  return { capability };
+  return { capability: policy.capability };
 }
 
 export async function launchCapability(
