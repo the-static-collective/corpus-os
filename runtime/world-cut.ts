@@ -9,8 +9,8 @@ export type TerminalDisposition = Exclude<CausalDisposition, "unspent">;
 export interface ReachabilityCause {
   readonly trustId: string;
   readonly authorityCut: string;
-  readonly actorId: string;
-  readonly capacity: string;
+  readonly actorId: string | null;
+  readonly capacity: string | null;
   readonly subjectRef: string;
   readonly capabilityId: string;
   readonly capabilityOperation: string;
@@ -71,33 +71,26 @@ function compareStrings(left: string, right: string): number {
   return left < right ? -1 : left > right ? 1 : 0;
 }
 
+function compareNullableStrings(
+  left: string | null,
+  right: string | null,
+): number {
+  return compareStrings(left ?? "", right ?? "");
+}
+
 function compareCauses(left: ReachabilityCause, right: ReachabilityCause): number {
-  const leftFields = [
-    left.trustRequestId,
-    left.trustId,
-    left.authorityCut,
-    left.actorId,
-    left.capacity,
-    left.subjectRef,
-    left.capabilityId,
-    left.capabilityOperation,
-  ];
-  const rightFields = [
-    right.trustRequestId,
-    right.trustId,
-    right.authorityCut,
-    right.actorId,
-    right.capacity,
-    right.subjectRef,
-    right.capabilityId,
-    right.capabilityOperation,
+  const scalarComparisons = [
+    compareStrings(left.trustRequestId, right.trustRequestId),
+    compareStrings(left.trustId, right.trustId),
+    compareStrings(left.authorityCut, right.authorityCut),
+    compareNullableStrings(left.actorId, right.actorId),
+    compareNullableStrings(left.capacity, right.capacity),
+    compareStrings(left.subjectRef, right.subjectRef),
+    compareStrings(left.capabilityId, right.capabilityId),
+    compareStrings(left.capabilityOperation, right.capabilityOperation),
   ];
 
-  for (let index = 0; index < leftFields.length; index += 1) {
-    const compared = compareStrings(leftFields[index], rightFields[index]);
-    if (compared !== 0) return compared;
-  }
-  return 0;
+  return scalarComparisons.find((comparison) => comparison !== 0) ?? 0;
 }
 
 function terminalDisposition(
@@ -135,12 +128,16 @@ function unresolvedIssue(
 /**
  * Copy the minimum non-authoritative evidence needed by Lawful Reachability
  * out of the richer Causal Accounting reconciliation shape. No warrant or
- * terminal receipt object crosses this boundary.
+ * terminal receipt object crosses this boundary. Effects with no genuine
+ * warrant attribution retain explicit null actor/capacity fields rather than
+ * inventing authority metadata that Causal Accounting does not possess.
  */
 export function reachabilityRecordsFromReconciliation(
   reconciliation: CausalReconciliation,
 ): readonly ReachabilityCausalRecord[] {
-  const records = reconciliation.entries.map((entry) => {
+  const records: ReachabilityCausalRecord[] = [];
+
+  for (const entry of reconciliation.entries) {
     const cause = freezeCause({
       trustId: entry.warrant.trustId,
       authorityCut: entry.warrant.authorityCut,
@@ -161,14 +158,36 @@ export function reachabilityRecordsFromReconciliation(
           })
         : undefined;
 
-    return Object.freeze({
-      cause,
-      disposition: entry.disposition,
-      ...(consequence === undefined ? {} : { consequence }),
-      balance: entry.balance,
-      anomalyCodes,
-    });
-  });
+    records.push(
+      Object.freeze({
+        cause,
+        disposition: entry.disposition,
+        ...(consequence === undefined ? {} : { consequence }),
+        balance: entry.balance,
+        anomalyCodes,
+      }),
+    );
+  }
+
+  for (const orphanEffect of reconciliation.orphanEffects) {
+    records.push(
+      Object.freeze({
+        cause: freezeCause({
+          trustId: orphanEffect.causalBinding.trustId,
+          authorityCut: orphanEffect.causalBinding.authorityCut,
+          actorId: null,
+          capacity: null,
+          subjectRef: orphanEffect.causalBinding.subjectRef,
+          capabilityId: orphanEffect.causalBinding.capabilityId,
+          capabilityOperation: orphanEffect.causalBinding.capabilityOperation,
+          trustRequestId: orphanEffect.causalBinding.trustRequestId,
+        }),
+        disposition: null,
+        balance: "anomaly" as const,
+        anomalyCodes: Object.freeze(["ORPHAN_EFFECT" as const]),
+      }),
+    );
+  }
 
   records.sort(
     (left, right) =>
@@ -184,6 +203,17 @@ export function deriveWorldCut(input: DeriveWorldCutInput): Readonly<WorldCut> {
   const constituted = new Set(input.root.constitutedRefs);
   const terminalHistory: TerminalHistoryEntry[] = [];
   const unresolved: ReachabilityIssue[] = [];
+  const unresolvedKeys = new Set<string>();
+
+  const addUnresolved = (
+    trustRequestId: string,
+    anomalyCode?: CausalAnomalyCode,
+  ): void => {
+    const key = `${trustRequestId}\u0000${anomalyCode ?? ""}`;
+    if (unresolvedKeys.has(key)) return;
+    unresolvedKeys.add(key);
+    unresolved.push(unresolvedIssue(trustRequestId, anomalyCode));
+  };
 
   for (const record of input.causalRecords) {
     const lineageMatches =
@@ -200,12 +230,10 @@ export function deriveWorldCut(input: DeriveWorldCutInput): Readonly<WorldCut> {
     ) {
       const sortedCodes = [...anomalyCodes].sort();
       if (sortedCodes.length === 0) {
-        unresolved.push(unresolvedIssue(record.cause.trustRequestId));
+        addUnresolved(record.cause.trustRequestId);
       } else {
         for (const anomalyCode of sortedCodes) {
-          unresolved.push(
-            unresolvedIssue(record.cause.trustRequestId, anomalyCode),
-          );
+          addUnresolved(record.cause.trustRequestId, anomalyCode);
         }
       }
       continue;
