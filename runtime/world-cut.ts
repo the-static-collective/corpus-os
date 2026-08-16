@@ -219,14 +219,18 @@ export function deriveWorldCut(input: DeriveWorldCutInput): Readonly<WorldCut> {
     const lineageMatches =
       record.cause.trustId === input.root.trustId &&
       record.cause.authorityCut === input.root.authorityCut;
+    const attributable =
+      record.cause.actorId !== null && record.cause.capacity !== null;
     const anomalyCodes = new Set<CausalAnomalyCode>(record.anomalyCodes);
 
     if (!lineageMatches) anomalyCodes.add("BROKEN_LINEAGE");
 
     if (
       !lineageMatches ||
+      !attributable ||
       record.balance !== "balanced" ||
-      record.disposition === null
+      record.disposition === null ||
+      anomalyCodes.size > 0
     ) {
       const sortedCodes = [...anomalyCodes].sort();
       if (sortedCodes.length === 0) {
