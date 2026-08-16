@@ -6,7 +6,7 @@
 |---|---|---|
 | Project 0 | normative node/relationship meaning, authority and evidence boundaries, canonical-addressing decision, conformance contract | product UI, corpus-specific motif workflow |
 | TranchNode | reusable append-only storage, accepted-event mechanics, deterministic traversal, portable continuity | Corpus OS views, forced Project 0 compatibility |
-| Corpus OS | corpus ingestion, declared particulars, seven projections, reader branching, bounded authority/execution proof, causal reconciliation, lawful-reachability projection, baseline experiment | universal ontology, a second canonicalizer, authority manufacture |
+| Corpus OS | corpus ingestion, declared particulars, seven projections, reader branching, bounded authority/execution proof, causal reconciliation, lawful-reachability projection, latent-reachability inspection, baseline experiment | universal ontology, a second canonicalizer, authority manufacture |
 
 ## Evidence / return slice
 
@@ -47,7 +47,7 @@ The host-reaching Session path accepts only a genuine issued warrant. The warran
 
 Every terminal receipt produced by the warrant-consuming Session path also carries `causalBinding`, a read-only evidence shape copied from the already-consumed genuine warrant: trust id, authority cut, corpus subject, capability id/operation/owner, Trust request id, and exact operation input. This binding is inspectable evidence only. It is not registered as authority and cannot be executed. The lower-level pure admission evaluator may still construct hypothetical refusal evidence for policy testing; that does not become causal history unless it reconciles to a genuine spent warrant.
 
-Lower-level capability policy remains independently testable through a pure admission evaluator. It may inspect hypothetical capability/operation/owner combinations but cannot invoke the host. The raw `CorpusSession.run(capabilityId, operation, input)` consequence shape no longer exists.
+Capability rules now live in `evaluateCapabilityPolicy(...)`, a pure shared evaluator that returns either the admitted capability descriptor or one existing `RefusalCode`. `evaluateCapabilityAdmission(...)` uses that result to preserve Session refusal-receipt behavior, while prospective inspection can reuse the same policy without manufacturing a hypothetical receipt. The policy evaluator cannot invoke the host or consume a warrant.
 
 This proof establishes **which declaration cut is entitled to admit executable actions**. It does not authenticate a caller as a named participant, establish legal validity, create portable authority, or define declaration succession/revocation law.
 
@@ -138,6 +138,45 @@ The bounded claim is:
 
 The projection grants no authority, issues or consumes no warrants, reaches no Session or host, persists nothing, repairs nothing, schedules nothing, authenticates no arbitrary persisted history, and carries `legalValidity: "unclaimed"`. It makes no legal-validity, distributed-consensus, cryptographic-attestation, or external-world-exclusivity claim.
 
+## Latent Reachability / prospective attempt eligibility v0.1
+
+`runtime/latent-reachability.ts` is a read-only prospective inspection downstream of a constituted `WorldCut`, genuine Action Warrant identity/state, and the shared Session capability policy. It answers one deliberately narrow question:
+
+> Does this already-issued authority still appear eligible to cross the Session attempt boundary from this constituted present?
+
+Conceptually:
+
+```text
+constituted WorldCut
+        +
+genuine issued Action Warrant
+        ↓
+non-consuming latent inspection
+        ↓
+ATTEMPT_REACHABLE | explicit prospective block
+
+(no spend, no Session receipt, no host call, no future state)
+```
+
+Inspection fails closed in this order:
+
+1. the supplied value must be a genuine in-process issued warrant; copied/spread/JSON/`structuredClone` representation is `LATENT_WARRANT_INVALID`;
+2. already-spent genuine authority is `LATENT_WARRANT_SPENT`;
+3. warrant `trustId` + `authorityCut` must exactly match `worldCut.root`, otherwise `LATENT_BROKEN_LINEAGE`;
+4. the warrant subject must already exist in `worldCut.constitutedRefs`, otherwise `LATENT_SUBJECT_NOT_CONSTITUTED`;
+5. the warrant must pass `evaluateCapabilityPolicy(...)`, preserving the existing capability refusal code when it does not;
+6. only then may the projection return `ATTEMPT_REACHABLE`.
+
+`ATTEMPT_REACHABLE` is not an Action Warrant, Session admission, execution reservation, prediction, or receipt. The reachable projection contains only the trusted request/subject/capability coordinates plus `outcome: "unknown-until-attempted"` and `legalValidity: "unclaimed"`. It deliberately omits the warrant object, operation input, capability-owner authority, Session receipt, host observation, and output refs.
+
+Repeated inspection does not consume the warrant. The module imports no host port, `launchCapability(...)`, or `consumeIssuedActionWarrant(...)`; the warrant-consuming Session path remains the only boundary in this slice that can cross toward a host consequence.
+
+The governing distinction is:
+
+> **Possible authority is not spent authority, and possible consequence is not constituted reality.**
+
+This first prospective proof does not enumerate all possible warrants, search the state space, simulate counterfactual worlds, predict host outcomes, reserve authority, schedule execution, authenticate future evidence, or create a durable future-state ledger.
+
 ## Exact-span law
 
 `TextSpanSelector` contains:
@@ -183,9 +222,10 @@ The seven canonical views over `ring_6` are unchanged. `ring_6` remains the cano
 1. **Original-source gap.** The three donor bundles do not contain the five original `Pasted text` inputs. Bundled exact excerpts are admitted; their cited upstream paths remain unresolved.
 2. **Canonical JSON gap.** Competing donor serializers exist, but none is adopted by the shared kernel.
 3. **Rejection gap.** Project 0 has a substantive `rejection` node. TranchNode v0.1 has no lossless representation.
-4. **Durability gap.** Reader-created branches, executable adoption/warrant authority, causal reconciliation, and constituted-world projection are process-local until append-only storage and accepted-event admission are integrated.
+4. **Durability gap.** Reader-created branches, executable adoption/warrant authority, causal reconciliation, constituted-world projection, and latent-reachability inspection are process-local until append-only storage and accepted-event admission are integrated.
 5. **Caller-authentication gap.** The synthetic Trust declaration distinguishes participant ids/capacities/powers, but this proof does not authenticate the external caller as that participant.
 6. **Temporal-authority gap.** Declaration replacement, revocation, and succession are not defined by v0.1.
 7. **Persisted-history authenticity gap.** `WorldCut` derives only from supplied accountable evidence; Corpus does not yet authenticate arbitrary persisted history or prove that an external substrate has not been changed outside this boundary.
+8. **Prospective-enumeration gap.** Latent Reachability can inspect one already-issued genuine warrant but does not discover or enumerate all actions that might become reachable from a constituted present.
 
 These are queryable or explicitly bounded system states, not prose footnotes to be forgotten.
