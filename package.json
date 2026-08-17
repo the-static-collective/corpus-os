@@ -15,6 +15,7 @@
     "test:kernel": "npm run build:kernel && node --test tests/kernel.test.mjs",
     "test:intake": "npm run build:kernel && node --test tests/intake.test.mjs",
     "test:session": "npm run build:kernel && node --test tests/corpus-session.test.mjs tests/corpus-host-linux.test.mjs tests/mandatory-warrant-boundary.test.mjs tests/capability-policy.test.mjs",
+    "test:world-encounter": "npm run build:kernel && node --test tests/world-encounter-destination.test.mjs",
     "test:trust": "npm run build:kernel && node --test tests/trust-runtime.test.mjs",
     "test:adoption": "npm run build:kernel && node --test tests/adopted-declaration.test.mjs",
     "test:warrant": "npm run build:kernel && node --test tests/adopted-warrant-root.test.mjs tests/warranted-execution.test.mjs",
@@ -24,7 +25,7 @@
     "test:browser": "npm run build && npm run build:kernel && node --test tests/intake-browser.test.mjs",
     "verify:corpus": "npm run build:kernel && node .kernel-dist/scripts/verify-corpus.js",
     "corpus:session": "npm run build:kernel && node .kernel-dist/scripts/corpus-session.js",
-    "check": "npm run lint && npm run test:kernel && npm run test:intake && npm run test:session && npm run test:trust && npm run test:adoption && npm run test:warrant && npm run test:causal && npm run test:reachability && npm run test:latent && npm run verify:corpus && npm test",
+    "check": "npm run lint && npm run test:kernel && npm run test:intake && npm run test:session && npm run test:world-encounter && npm run test:trust && npm run test:adoption && npm run test:warrant && npm run test:causal && npm run test:reachability && npm run test:latent && npm run verify:corpus && npm test",
     "validate:artifact": "bash scripts/validate-artifact.sh",
     "lint": "bash scripts/sites-env.sh -- eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "bash scripts/sites-env.sh -- drizzle-kit generate"
