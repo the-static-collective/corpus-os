@@ -25,6 +25,7 @@
     "test:browser": "npm run build && npm run build:kernel && node --test tests/intake-browser.test.mjs",
     "verify:corpus": "npm run build:kernel && node .kernel-dist/scripts/verify-corpus.js",
     "corpus:session": "npm run build:kernel && node .kernel-dist/scripts/corpus-session.js",
+    "world-encounter:stdio": "npm run build:kernel --silent && node .kernel-dist/scripts/world-encounter-stdio.js",
     "check": "npm run lint && npm run test:kernel && npm run test:intake && npm run test:session && npm run test:trust && npm run test:adoption && npm run test:warrant && npm run test:causal && npm run test:reachability && npm run test:latent && npm run test:encounter && npm run verify:corpus && npm test",
     "validate:artifact": "bash scripts/validate-artifact.sh",
     "lint": "bash scripts/sites-env.sh -- eslint . --ignore-pattern dist --ignore-pattern .next",
