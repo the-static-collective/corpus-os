@@ -90,6 +90,9 @@ test("verified local subject crosses only through Corpus-owned adopted warrant a
   assert.deepEqual(result.outputRefs, ["session-output:session-request-0001"]);
   assert.ok(result.evidenceRefs.includes(ENVELOPE_REF));
   assert.ok(result.evidenceRefs.includes("fixtures/capabilities/synthetic.echo.json"));
+  assert.equal("warrant" in result, false);
+  assert.equal("actorId" in result, false);
+  assert.equal("capacity" in result, false);
   assert.equal(host.calls.length, 1);
   assert.equal(host.calls[0].capabilityId, "synthetic.echo");
   assert.equal(host.calls[0].operation, "echo");
@@ -145,6 +148,9 @@ test("stdio adapter performs one real default-host admitted encounter", async ()
   assert.equal(response.result.reasonCode, "CORPUS_ENCOUNTER_ADMITTED");
   assert.equal(response.result.callerAuthenticated, false);
   assert.equal(response.result.authorityTransfer, "none");
+  assert.equal("warrant" in response.result, false);
+  assert.equal("actorId" in response.result, false);
+  assert.equal("capacity" in response.result, false);
 });
 
 test("stdio adapter reports malformed JSON structurally", async () => {
@@ -154,6 +160,27 @@ test("stdio adapter reports malformed JSON structurally", async () => {
     schema: STDIO_RESPONSE_SCHEMA,
     ok: false,
     error: { code: "ADAPTER_MALFORMED_JSON" },
+  });
+});
+
+test("stdio adapter rejects oversized raw transport before retaining an unbounded body", async () => {
+  const oversized = { ...request(), padding: "x".repeat(1_100_000) };
+  const result = await runAdapter(`${JSON.stringify(oversized)}\n`);
+  assert.equal(result.code, 1);
+  assert.deepEqual(JSON.parse(result.stdout), {
+    schema: STDIO_RESPONSE_SCHEMA,
+    ok: false,
+    error: { code: "ADAPTER_INPUT_TOO_LARGE" },
+  });
+});
+
+test("stdio adapter rejects unknown non-authority wrapper fields", async () => {
+  const result = await runAdapter(`${JSON.stringify({ ...request(), surprise: true })}\n`);
+  assert.equal(result.code, 1);
+  assert.deepEqual(JSON.parse(result.stdout), {
+    schema: STDIO_RESPONSE_SCHEMA,
+    ok: false,
+    error: { code: "ADAPTER_UNKNOWN_FIELD" },
   });
 });
 
@@ -175,4 +202,7 @@ test("caller-minted authority fields are constitutionally refused, never interpr
   assert.equal(response.result.callerAuthenticated, false);
   assert.equal(response.result.authorityTransfer, "none");
   assert.equal(response.result.receiptRequestId, undefined);
+  assert.equal("warrant" in response.result, false);
+  assert.equal("actorId" in response.result, false);
+  assert.equal("capacity" in response.result, false);
 });
