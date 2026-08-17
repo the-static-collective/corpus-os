@@ -3,7 +3,7 @@ import { spawnSync } from "node:child_process";
 import test from "node:test";
 
 import {
-  CORPUS_WORLD_ENCOUNTER_AUTHORITY_REF,
+  CORPUS_WORLD_ENCOUNTER_POLICY_REF,
   createWorldEncounterDestination,
   runWorldEncounterDestination,
 } from "../.kernel-dist/kernel/world-encounter-destination.js";
@@ -31,19 +31,19 @@ const request = {
   encounter,
 };
 
-test("admits one verified public source ref under Corpus-owned local authority", () => {
+test("admits one verified public source ref under Corpus-owned non-authoritative policy", () => {
   const before = structuredClone(encounter);
   const destination = createWorldEncounterDestination();
   const result = destination.evaluate(request);
 
   assert.equal(result.status, "admitted");
   assert.equal(result.reasonCode, "CORPUS_ENCOUNTER_ADMITTED");
-  assert.deepEqual(result.destinationAuthorityEvidenceRefs, [CORPUS_WORLD_ENCOUNTER_AUTHORITY_REF]);
-  assert.equal(result.destinationAuthorityEvidenceRefs.includes(encounter.body.sourceAuthorityRefs[0]), false);
+  assert.equal(result.authority, "none");
+  assert.deepEqual(result.destinationPolicyEvidenceRefs, [CORPUS_WORLD_ENCOUNTER_POLICY_REF]);
   assert.deepEqual(encounter, before);
 });
 
-test("source-declared authority can never become Corpus destination authority", () => {
+test("source-declared authority is ignored rather than becoming destination authority", () => {
   const destination = createWorldEncounterDestination();
   const result = destination.evaluate({
     ...structuredClone(request),
@@ -51,23 +51,42 @@ test("source-declared authority can never become Corpus destination authority", 
       ...structuredClone(encounter),
       body: {
         ...structuredClone(encounter.body),
-        sourceAuthorityRefs: [CORPUS_WORLD_ENCOUNTER_AUTHORITY_REF],
+        sourceAuthorityRefs: ["source:claims-this-power"],
+      },
+    },
+  });
+
+  assert.equal(result.status, "admitted");
+  assert.equal(result.authority, "none");
+  assert.equal(JSON.stringify(result).includes("source:claims-this-power"), false);
+});
+
+test("absence of Corpus-local policy refuses without manufacturing authority", () => {
+  const destination = createWorldEncounterDestination({ policyEnabled: false });
+  const result = destination.evaluate(request);
+
+  assert.equal(result.status, "refused");
+  assert.equal(result.reasonCode, "CORPUS_DESTINATION_POLICY_REQUIRED");
+  assert.equal(result.authority, "none");
+  assert.deepEqual(result.destinationPolicyEvidenceRefs, []);
+});
+
+test("unsupported Project0 encounter protocol fails compatibility locally", () => {
+  const destination = createWorldEncounterDestination();
+  const result = destination.evaluate({
+    ...structuredClone(request),
+    encounter: {
+      ...structuredClone(encounter),
+      body: {
+        ...structuredClone(encounter.body),
+        protocolVersion: "p0.exchange/9.9",
       },
     },
   });
 
   assert.equal(result.status, "refused");
-  assert.equal(result.reasonCode, "CORPUS_SOURCE_AUTHORITY_NOT_LOCAL");
-  assert.deepEqual(result.destinationAuthorityEvidenceRefs, [CORPUS_WORLD_ENCOUNTER_AUTHORITY_REF]);
-});
-
-test("absence of Corpus-local authority refuses instead of borrowing source authority", () => {
-  const destination = createWorldEncounterDestination({ localAuthorityRefs: [] });
-  const result = destination.evaluate(request);
-
-  assert.equal(result.status, "refused");
-  assert.equal(result.reasonCode, "CORPUS_DESTINATION_AUTHORITY_REQUIRED");
-  assert.deepEqual(result.destinationAuthorityEvidenceRefs, []);
+  assert.equal(result.reasonCode, "CORPUS_PROTOCOL_UNSUPPORTED");
+  assert.equal(result.authority, "none");
 });
 
 test("unresolved source verification stays indeterminate", () => {
@@ -85,6 +104,7 @@ test("unresolved source verification stays indeterminate", () => {
 
   assert.equal(result.status, "indeterminate");
   assert.equal(result.reasonCode, "CORPUS_SOURCE_VERIFICATION_UNRESOLVED");
+  assert.equal(result.authority, "none");
 });
 
 test("unexpected destination execution failure is not constitutional refusal", () => {
@@ -94,6 +114,7 @@ test("unexpected destination execution failure is not constitutional refusal", (
 
   assert.equal(result.status, "failed");
   assert.equal(result.failureClass, "CORPUS_DESTINATION_RUNTIME_FAILURE");
+  assert.equal(result.authority, "none");
 });
 
 test("stdio host returns the Corpus-owned disposition without accepting caller authority", () => {
@@ -106,5 +127,6 @@ test("stdio host returns the Corpus-owned disposition without accepting caller a
   const result = JSON.parse(child.stdout);
   assert.equal(result.schema, "corpus.world-encounter-disposition/v0.1");
   assert.equal(result.status, "admitted");
-  assert.deepEqual(result.destinationAuthorityEvidenceRefs, [CORPUS_WORLD_ENCOUNTER_AUTHORITY_REF]);
+  assert.equal(result.authority, "none");
+  assert.deepEqual(result.destinationPolicyEvidenceRefs, [CORPUS_WORLD_ENCOUNTER_POLICY_REF]);
 });
