@@ -21,10 +21,11 @@
     "test:causal": "npm run build:kernel && node --test tests/causal-accounting.test.mjs",
     "test:reachability": "npm run build:kernel && node --test tests/lawful-reachability.test.mjs tests/lawful-reachability-orphan-effects.test.mjs tests/lawful-reachability-boundary.test.mjs",
     "test:latent": "npm run build:kernel && node --test tests/latent-reachability.test.mjs",
+    "test:encounter": "npm run build:kernel && node --test tests/world-encounter-admission.test.mjs",
     "test:browser": "npm run build && npm run build:kernel && node --test tests/intake-browser.test.mjs",
     "verify:corpus": "npm run build:kernel && node .kernel-dist/scripts/verify-corpus.js",
     "corpus:session": "npm run build:kernel && node .kernel-dist/scripts/corpus-session.js",
-    "check": "npm run lint && npm run test:kernel && npm run test:intake && npm run test:session && npm run test:trust && npm run test:adoption && npm run test:warrant && npm run test:causal && npm run test:reachability && npm run test:latent && npm run verify:corpus && npm test",
+    "check": "npm run lint && npm run test:kernel && npm run test:intake && npm run test:session && npm run test:trust && npm run test:adoption && npm run test:warrant && npm run test:causal && npm run test:reachability && npm run test:latent && npm run test:encounter && npm run verify:corpus && npm test",
     "validate:artifact": "bash scripts/validate-artifact.sh",
     "lint": "bash scripts/sites-env.sh -- eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "bash scripts/sites-env.sh -- drizzle-kit generate"
