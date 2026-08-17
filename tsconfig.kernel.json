@@ -21,6 +21,7 @@
     "lib/intake.ts",
     "lib/trust-runtime.ts",
     "scripts/verify-corpus.ts",
-    "scripts/corpus-session.ts"
+    "scripts/corpus-session.ts",
+    "scripts/world-encounter-destination.ts"
   ]
 }
