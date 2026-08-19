@@ -1,0 +1,23 @@
+{
+  "schema": "static-collective.project-status.v1",
+  "asOf": "2026-08-17",
+  "repository": "the-static-collective/corpus-os",
+  "defaultBranch": "main",
+  "project": "Corpus OS",
+  "state": "active",
+  "phase": "constituted reality + destination-local world encounter admission",
+  "canonicalAuthority": "project-owned repository",
+  "observedMainCommit": "63c0be4cd49c383ae167ded99103b79ba4626416",
+  "executableSurface": [
+    {"id": "adopted-warranted-execution", "status": "landed"},
+    {"id": "causal-accounting", "status": "landed"},
+    {"id": "lawful-reachability", "status": "landed"},
+    {"id": "latent-reachability", "status": "landed", "evidence": {"commit": "f54c808c3c91a599f47189a1e873c8adcaff7143", "pullRequest": 24}},
+    {"id": "world-encounter-admission-v0.1", "status": "landed", "interface": "npm run world-encounter:stdio", "evidence": {"commit": "63c0be4cd49c383ae167ded99103b79ba4626416", "pullRequest": 28}}
+  ],
+  "nonClaims": [
+    "destination-local admission does not make transport authoritative",
+    "legal validity remains unclaimed",
+    "constituted-world derivation does not create distributed consensus or prevent external mutation"
+  ]
+}
