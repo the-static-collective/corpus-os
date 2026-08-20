@@ -91,6 +91,10 @@ export class CorpusContinuityAttestationError extends Error {
   }
 }
 
+function compareStrings(left: string, right: string): number {
+  return left < right ? -1 : left > right ? 1 : 0;
+}
+
 function requiredString(value: unknown, detail: string): string {
   if (typeof value !== "string" || value.trim().length === 0) {
     throw new CorpusContinuityAttestationError("INVALID_INPUT", detail);
@@ -139,7 +143,7 @@ function uniqueSortedStrings(value: unknown, detail: string): readonly string[] 
     }
     result.push(normalized);
   }
-  return Object.freeze(result.sort());
+  return Object.freeze(result.sort(compareStrings));
 }
 
 function parseTransitionEvidence(
@@ -187,10 +191,10 @@ function parseTransitionEvidence(
 
   result.sort(
     (left, right) =>
-      left.priorRef.localeCompare(right.priorRef) ||
-      left.kind.localeCompare(right.kind) ||
-      (left.currentRef ?? "").localeCompare(right.currentRef ?? "") ||
-      left.evidenceRef.localeCompare(right.evidenceRef),
+      compareStrings(left.priorRef, right.priorRef) ||
+      compareStrings(left.kind, right.kind) ||
+      compareStrings(left.currentRef ?? "", right.currentRef ?? "") ||
+      compareStrings(left.evidenceRef, right.evidenceRef),
   );
   return Object.freeze(result);
 }
@@ -259,7 +263,7 @@ export function deriveCorpusContinuityAttestation(
   const currentRefs = new Set(input.currentCut.constitutedRefs);
 
   const preservedRefs = Object.freeze(
-    [...priorRefs].filter((ref) => currentRefs.has(ref)).sort(),
+    [...priorRefs].filter((ref) => currentRefs.has(ref)).sort(compareStrings),
   );
   const priorOnly = new Set([...priorRefs].filter((ref) => !currentRefs.has(ref)));
   const currentOnly = new Set([...currentRefs].filter((ref) => !priorRefs.has(ref)));
@@ -318,24 +322,24 @@ export function deriveCorpusContinuityAttestation(
 
   transformed.sort(
     (left, right) =>
-      left.priorRef.localeCompare(right.priorRef) ||
-      left.currentRef.localeCompare(right.currentRef) ||
-      left.evidenceRef.localeCompare(right.evidenceRef),
+      compareStrings(left.priorRef, right.priorRef) ||
+      compareStrings(left.currentRef, right.currentRef) ||
+      compareStrings(left.evidenceRef, right.evidenceRef),
   );
   lost.sort(
     (left, right) =>
-      left.priorRef.localeCompare(right.priorRef) ||
-      left.evidenceRef.localeCompare(right.evidenceRef),
+      compareStrings(left.priorRef, right.priorRef) ||
+      compareStrings(left.evidenceRef, right.evidenceRef),
   );
 
   const unresolvedRefs = Object.freeze(
     [
       ...[...priorOnly].filter((ref) => !usedPrior.has(ref)),
       ...[...currentOnly].filter((ref) => !usedCurrent.has(ref)),
-    ].sort(),
+    ].sort(compareStrings),
   );
   const transitionEvidenceRefs = Object.freeze(
-    [...usedEvidence].sort(),
+    [...usedEvidence].sort(compareStrings),
   );
   const currentConstitutedRefs = Object.freeze([
     ...input.currentCut.constitutedRefs,
