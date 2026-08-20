@@ -319,3 +319,53 @@ continuityTest("accessor-backed transition evidence fails closed without executi
   );
   assert.equal(accessorExecuted, false);
 });
+
+continuityTest("transition record ordering is locale-independent code-unit order", () => {
+  const priorCut = world.deriveWorldCut({
+    root: Object.freeze({
+      trustId: "trust:casework.synthetic",
+      authorityCut: "v0.1",
+      constitutedRefs: Object.freeze([
+        "artifact:zeta-prior",
+        "artifact:äther-prior",
+      ]),
+    }),
+    causalRecords: [],
+    observations: [],
+  });
+  const currentCut = world.deriveWorldCut({
+    root: Object.freeze({
+      trustId: "trust:casework.synthetic",
+      authorityCut: "v0.2",
+      constitutedRefs: Object.freeze([]),
+    }),
+    causalRecords: [],
+    observations: [],
+  });
+
+  const attestation = continuity.deriveCorpusContinuityAttestation({
+    priorCutRef: "world-cut:locale-prior",
+    currentCutRef: "world-cut:locale-current",
+    priorCut,
+    currentCut,
+    transitionEvidence: [
+      {
+        kind: "lost",
+        priorRef: "artifact:äther-prior",
+        evidenceRef: "transition:äther-lost",
+      },
+      {
+        kind: "lost",
+        priorRef: "artifact:zeta-prior",
+        evidenceRef: "transition:zeta-lost",
+      },
+    ],
+    authorityContinuity: "none",
+    authorityEvidenceRefs: [],
+  });
+
+  assert.deepEqual(
+    attestation.lost.map((entry) => entry.priorRef),
+    ["artifact:zeta-prior", "artifact:äther-prior"],
+  );
+});
