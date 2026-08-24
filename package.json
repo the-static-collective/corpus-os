@@ -22,7 +22,7 @@
     "test:reachability": "npm run build:kernel && node --test tests/lawful-reachability.test.mjs tests/lawful-reachability-orphan-effects.test.mjs tests/lawful-reachability-boundary.test.mjs",
     "test:continuity": "npm run build:kernel && node --test tests/continuity-attestation.test.mjs",
     "test:latent": "npm run build:kernel && node --test tests/latent-reachability.test.mjs",
-    "test:encounter": "npm run build:kernel && node --test tests/world-encounter-admission.test.mjs",
+    "test:encounter": "npm run build:kernel && node --test tests/world-encounter-admission.test.mjs tests/world-encounter-phase-dispositions.test.mjs",
     "test:browser": "npm run build && npm run build:kernel && node --test tests/intake-browser.test.mjs",
     "verify:corpus": "npm run build:kernel && node .kernel-dist/scripts/verify-corpus.js",
     "corpus:session": "npm run build:kernel && node .kernel-dist/scripts/corpus-session.js",
