@@ -35,6 +35,27 @@ export type WorldEncounterDisposition =
   | "indeterminate"
   | "failed";
 
+export type WorldEncounterPhaseName =
+  | "destination-admission"
+  | "local-authority"
+  | "attempt"
+  | "outcome";
+
+export type WorldEncounterPhaseDisposition =
+  | "admitted"
+  | "refused"
+  | "indeterminate"
+  | "failed"
+  | "completed";
+
+export interface WorldEncounterPhaseEvidence {
+  readonly phase: WorldEncounterPhaseName;
+  readonly disposition: WorldEncounterPhaseDisposition;
+  readonly reasonCode: string;
+  readonly evidenceRefs: readonly string[];
+  readonly authorityTransfer: "none";
+}
+
 export interface WorldEncounterAdmissionResult {
   readonly schema: typeof WORLD_ENCOUNTER_RESULT_SCHEMA;
   readonly status: WorldEncounterDisposition;
@@ -48,6 +69,7 @@ export interface WorldEncounterAdmissionResult {
   readonly receiptRequestId?: string;
   readonly outputRefs: readonly string[];
   readonly evidenceRefs: readonly string[];
+  readonly phases: readonly WorldEncounterPhaseEvidence[];
 }
 
 export interface WorldEncounterAdmissionOptions {
@@ -56,6 +78,21 @@ export interface WorldEncounterAdmissionOptions {
 
 function unique(values: readonly string[]): string[] {
   return [...new Set(values)];
+}
+
+function phase(
+  phaseName: WorldEncounterPhaseName,
+  disposition: WorldEncounterPhaseDisposition,
+  reasonCode: string,
+  evidenceRefs: readonly string[] = [],
+): WorldEncounterPhaseEvidence {
+  return Object.freeze({
+    phase: phaseName,
+    disposition,
+    reasonCode,
+    evidenceRefs: Object.freeze(unique(evidenceRefs)),
+    authorityTransfer: "none",
+  });
 }
 
 function result(
@@ -69,6 +106,7 @@ function result(
     receiptRequestId?: string;
     outputRefs?: readonly string[];
     evidenceRefs?: readonly string[];
+    phases?: readonly WorldEncounterPhaseEvidence[];
   } = {},
 ): WorldEncounterAdmissionResult {
   return Object.freeze({
@@ -86,6 +124,7 @@ function result(
     evidenceRefs: Object.freeze(
       unique([request.envelopeRef, ...(additions.evidenceRefs ?? [])]),
     ),
+    phases: Object.freeze([...(additions.phases ?? [])]),
   });
 }
 
@@ -103,21 +142,53 @@ export async function evaluateWorldEncounterAdmission(
   options: WorldEncounterAdmissionOptions = {},
 ): Promise<WorldEncounterAdmissionResult> {
   if (request.destinationFrameRef !== WORLD_ENCOUNTER_DESTINATION_FRAME) {
-    return result(request, "indeterminate", "DESTINATION_FRAME_UNRESOLVED");
+    return result(request, "indeterminate", "DESTINATION_FRAME_UNRESOLVED", {
+      phases: [
+        phase(
+          "destination-admission",
+          "indeterminate",
+          "DESTINATION_FRAME_UNRESOLVED",
+        ),
+      ],
+    });
   }
 
   if (request.profile !== WORLD_ENCOUNTER_PROFILE) {
-    return result(request, "refused", "DESTINATION_PROFILE_NOT_DECLARED");
+    return result(request, "refused", "DESTINATION_PROFILE_NOT_DECLARED", {
+      phases: [
+        phase(
+          "destination-admission",
+          "refused",
+          "DESTINATION_PROFILE_NOT_DECLARED",
+        ),
+      ],
+    });
   }
 
   if (!request.destinationSubjectRef) {
-    return result(request, "indeterminate", "DESTINATION_SUBJECT_UNRESOLVED");
+    return result(request, "indeterminate", "DESTINATION_SUBJECT_UNRESOLVED", {
+      phases: [
+        phase(
+          "destination-admission",
+          "indeterminate",
+          "DESTINATION_SUBJECT_UNRESOLVED",
+        ),
+      ],
+    });
   }
+
+  const destinationAdmission = phase(
+    "destination-admission",
+    "admitted",
+    "CORPUS_DESTINATION_ADMITTED",
+    [request.envelopeRef],
+  );
 
   const adoption = await loadAdoptedDeclaration();
   if (!adoption.adopted || !adoption.handle) {
     return result(request, "failed", adoption.code, {
       evidenceRefs: [ADOPTED_DECLARATION_EVIDENCE_REF],
+      phases: [destinationAdmission],
     });
   }
 
@@ -127,6 +198,7 @@ export async function evaluateWorldEncounterAdmission(
   } catch {
     return result(request, "failed", "CORPUS_SESSION_INITIALIZATION_FAILED", {
       evidenceRefs: [ADOPTED_DECLARATION_EVIDENCE_REF],
+      phases: [destinationAdmission],
     });
   }
 
@@ -147,20 +219,36 @@ export async function evaluateWorldEncounterAdmission(
   if (!action.admission.admitted || !action.admission.warrant) {
     return result(request, "refused", action.admission.code, {
       evidenceRefs: [ADOPTED_DECLARATION_EVIDENCE_REF],
+      phases: [destinationAdmission],
     });
   }
+
+  const localAuthority = phase(
+    "local-authority",
+    "admitted",
+    action.admission.code,
+    [ADOPTED_DECLARATION_EVIDENCE_REF],
+  );
 
   const execution = action.execution;
   if (!execution) {
     return result(request, "failed", "CORPUS_EXECUTION_RESULT_MISSING", {
       evidenceRefs: [ADOPTED_DECLARATION_EVIDENCE_REF],
+      phases: [destinationAdmission, localAuthority],
     });
   }
 
   const launch = execution.launch;
   if (!launch || !launch.accepted) {
+    const attempt = phase(
+      "attempt",
+      "failed",
+      execution.code,
+      [ADOPTED_DECLARATION_EVIDENCE_REF],
+    );
     return result(request, "failed", execution.code, {
       evidenceRefs: [ADOPTED_DECLARATION_EVIDENCE_REF],
+      phases: [destinationAdmission, localAuthority, attempt],
     });
   }
 
@@ -169,34 +257,63 @@ export async function evaluateWorldEncounterAdmission(
     ADOPTED_DECLARATION_EVIDENCE_REF,
     ...receipt.evidenceRefs,
   ];
+  const attempt = phase(
+    "attempt",
+    "admitted",
+    execution.code,
+    receipt.evidenceRefs,
+  );
 
   if (!receipt.admitted || receipt.status === "refused") {
+    const outcomeReason = receipt.refusalCode ?? execution.code;
+    const outcome = phase(
+      "outcome",
+      "refused",
+      outcomeReason,
+      receipt.evidenceRefs,
+    );
     return result(
       request,
       "refused",
-      receipt.refusalCode ?? execution.code,
+      outcomeReason,
       {
         receiptRequestId: receipt.requestId,
         evidenceRefs,
+        phases: [destinationAdmission, localAuthority, attempt, outcome],
       },
     );
   }
 
   if (receipt.status === "failed") {
+    const outcomeReason = receipt.failureCode ?? "CORPUS_HOST_FAILED";
+    const outcome = phase(
+      "outcome",
+      "failed",
+      outcomeReason,
+      receipt.evidenceRefs,
+    );
     return result(
       request,
       "failed",
-      receipt.failureCode ?? "CORPUS_HOST_FAILED",
+      outcomeReason,
       {
         receiptRequestId: receipt.requestId,
         evidenceRefs,
+        phases: [destinationAdmission, localAuthority, attempt, outcome],
       },
     );
   }
 
+  const outcome = phase(
+    "outcome",
+    "completed",
+    "CORPUS_ENCOUNTER_COMPLETED",
+    [...receipt.evidenceRefs, ...receipt.outputRefs],
+  );
   return result(request, "admitted", "CORPUS_ENCOUNTER_ADMITTED", {
     receiptRequestId: receipt.requestId,
     outputRefs: receipt.outputRefs,
     evidenceRefs,
+    phases: [destinationAdmission, localAuthority, attempt, outcome],
   });
 }
