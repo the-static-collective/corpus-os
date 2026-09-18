@@ -1,0 +1,49 @@
+{
+  "schema": "body.surface/v0",
+  "organ": "corpus-os",
+  "owner": "the-static-collective/corpus-os",
+  "publication": {
+    "status": "owner-published",
+    "standard": "static-collective/body-surface/v0",
+    "scope": "interface-declaration"
+  },
+  "provides": [],
+  "needs": [],
+  "interfaces": [],
+  "measure": {
+    "declared": [
+      {
+        "dimension": "role",
+        "value": "downstream-application-proof",
+        "unit": "state"
+      },
+      {
+        "dimension": "authority-mode",
+        "value": "warranted-execution-only",
+        "unit": "state"
+      }
+    ],
+    "observed": []
+  },
+  "receipts": [
+    {
+      "kind": "owner-contract",
+      "coordinate": "README.md"
+    }
+  ],
+  "residual_fog": [
+    "Corpus OS has multiple executable proof surfaces, but no single body protocol is declared until the owner contracts identify the smallest stable cross-project boundary."
+  ],
+  "non_authorities": [
+    "surface != warrant",
+    "observation != authority",
+    "body compatibility != execution eligibility"
+  ],
+  "evidence": [
+    {
+      "kind": "owner-readme",
+      "coordinate": "README.md"
+    }
+  ],
+  "authority": "none"
+}
